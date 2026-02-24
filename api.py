@@ -60,7 +60,7 @@ class TankEnvironmentUpdate(BaseModel):
     fresh_capacity_gal: float = 100
     grey_capacity_gal: float = 80
     black_capacity_gal: float = 40
-    current_fresh_gal: float = 0
+    current_fresh_gal: float = 100
     current_grey_gal: float = 0
     current_black_gal: float = 0
     climate_multiplier: float = 1.0
