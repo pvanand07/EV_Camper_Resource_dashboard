@@ -38,7 +38,7 @@ def create_db(conn: sqlite3.Connection):
     );
 
     -- SECTION 2: Tank & Environment
-    CREATE TABLE tank_environment (
+    CREATE TABLE IF NOT EXISTS tank_environment (
         id                   INTEGER PRIMARY KEY AUTOINCREMENT,
         fresh_capacity_gal   REAL NOT NULL DEFAULT 100,
         grey_capacity_gal    REAL NOT NULL DEFAULT 80,
@@ -53,7 +53,7 @@ def create_db(conn: sqlite3.Connection):
     );
 
     -- SECTION 3: Behavior Multipliers per user type
-    CREATE TABLE behavior_multiplier (
+    CREATE TABLE IF NOT EXISTS behavior_multiplier (
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
         user_type    TEXT NOT NULL,
         shower_mult  REAL NOT NULL,
@@ -62,7 +62,7 @@ def create_db(conn: sqlite3.Connection):
     );
 
     -- SECTION 4: Activity Engine — base parameters (editable)
-    CREATE TABLE activity (
+    CREATE TABLE IF NOT EXISTS activity (
         id                         INTEGER PRIMARY KEY AUTOINCREMENT,
         name                       TEXT NOT NULL,
         flow_gal_per_min           REAL,
@@ -79,7 +79,7 @@ def create_db(conn: sqlite3.Connection):
     );
 
     -- SECTION 4: Activity Engine — computed daily results (deterministic baseline)
-    CREATE TABLE activity_result (
+    CREATE TABLE IF NOT EXISTS activity_result (
         id               INTEGER PRIMARY KEY AUTOINCREMENT,
         activity_name    TEXT NOT NULL,
         daily_fresh_gal  REAL NOT NULL,
@@ -89,7 +89,7 @@ def create_db(conn: sqlite3.Connection):
     );
 
     -- SECTION 4: Daily usage split across target days (per activity, per day, with drift applied)
-    CREATE TABLE daily_usage_by_day (
+    CREATE TABLE IF NOT EXISTS daily_usage_by_day (
         id               INTEGER PRIMARY KEY AUTOINCREMENT,
         activity_name    TEXT NOT NULL,
         day_num          INTEGER NOT NULL,
@@ -100,7 +100,7 @@ def create_db(conn: sqlite3.Connection):
     );
 
     -- SECTION 5: Tank Projections
-    CREATE TABLE tank_projection (
+    CREATE TABLE IF NOT EXISTS tank_projection (
         id               INTEGER PRIMARY KEY AUTOINCREMENT,
         tank             TEXT NOT NULL,
         capacity_gal     REAL NOT NULL,
@@ -111,7 +111,7 @@ def create_db(conn: sqlite3.Connection):
     );
 
     -- SECTION 5: Stability Score
-    CREATE TABLE stability_score (
+    CREATE TABLE IF NOT EXISTS stability_score (
         id             INTEGER PRIMARY KEY AUTOINCREMENT,
         limiting_tank  TEXT NOT NULL,
         limiting_days  REAL NOT NULL,
@@ -141,7 +141,7 @@ def seed_data(conn: sqlite3.Connection):
           (fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
            current_fresh_gal,  current_grey_gal,  current_black_gal,
            climate_multiplier, target_autonomy_days, drift, drift_seed)
-        VALUES (100, 80, 40, 0, 0, 0, 1.0, 5, 0.0, NULL)
+        VALUES (100, 80, 40, 100, 0, 0, 1.0, 5, 0.0, NULL)
     """)
 
     cur.executemany(
@@ -207,6 +207,9 @@ def _migrate(conn: sqlite3.Connection):
         cur.execute("ALTER TABLE tank_environment ADD COLUMN drift_seed INTEGER")
     except sqlite3.OperationalError:
         pass  # already exists
+
+    # Default current_fresh_gal to 100 if it was seeded as 0
+    cur.execute("UPDATE tank_environment SET current_fresh_gal = 100 WHERE id = 1 AND current_fresh_gal = 0")
 
     conn.commit()
 
