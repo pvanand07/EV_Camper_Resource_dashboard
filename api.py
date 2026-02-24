@@ -43,6 +43,9 @@ def ensure_initialized(conn: sqlite3.Connection):
     except sqlite3.OperationalError:
         water_model.create_db(conn)
         water_model.seed_data(conn)
+    # Always run migrations so new columns (drift, drift_factor) exist
+    # on existing databases before any read or write touches them.
+    water_model._migrate(conn)
 
 
 # ─── Pydantic models ────────────────────────────────────────────────────────
@@ -62,6 +65,8 @@ class TankEnvironmentUpdate(BaseModel):
     current_black_gal: float = 0
     climate_multiplier: float = 1.0
     target_autonomy_days: float = 5
+    drift: float = 0.0          # NEW — 0 = deterministic, 1 = max normal drift
+    drift_seed: int | None = None  # None = fresh random each run, int = locked seed
 
 
 class BehaviorMultiplierUpdate(BaseModel):
@@ -103,14 +108,16 @@ def get_inputs():
         cur.execute("SELECT * FROM tank_environment LIMIT 1")
         row = cur.fetchone()
         tank_environment = {
-            "fresh_capacity_gal": row["fresh_capacity_gal"],
-            "grey_capacity_gal": row["grey_capacity_gal"],
-            "black_capacity_gal": row["black_capacity_gal"],
-            "current_fresh_gal": row["current_fresh_gal"],
-            "current_grey_gal": row["current_grey_gal"],
-            "current_black_gal": row["current_black_gal"],
-            "climate_multiplier": row["climate_multiplier"],
+            "fresh_capacity_gal":   row["fresh_capacity_gal"],
+            "grey_capacity_gal":    row["grey_capacity_gal"],
+            "black_capacity_gal":   row["black_capacity_gal"],
+            "current_fresh_gal":    row["current_fresh_gal"],
+            "current_grey_gal":     row["current_grey_gal"],
+            "current_black_gal":    row["current_black_gal"],
+            "climate_multiplier":   row["climate_multiplier"],
             "target_autonomy_days": row["target_autonomy_days"],
+            "drift":                row["drift"],
+            "drift_seed":           row["drift_seed"],
         } if row else None
 
         cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
@@ -150,12 +157,12 @@ def put_inputs(payload: InputsUpdate):
                 UPDATE tank_environment SET
                     fresh_capacity_gal = ?, grey_capacity_gal = ?, black_capacity_gal = ?,
                     current_fresh_gal = ?, current_grey_gal = ?, current_black_gal = ?,
-                    climate_multiplier = ?, target_autonomy_days = ?
+                    climate_multiplier = ?, target_autonomy_days = ?, drift = ?, drift_seed = ?
                 WHERE id = 1
             """, (
                 t.fresh_capacity_gal, t.grey_capacity_gal, t.black_capacity_gal,
                 t.current_fresh_gal, t.current_grey_gal, t.current_black_gal,
-                t.climate_multiplier, t.target_autonomy_days,
+                t.climate_multiplier, t.target_autonomy_days, t.drift, t.drift_seed,
             ))
 
         if payload.behavior_multipliers is not None:
@@ -224,25 +231,29 @@ def get_results():
         row = cur.fetchone()
         stability_score = dict(row) if row else None
 
-        # Daily usage split across target days: Activity | fresh_1 | grey_1 | back_1 | fresh_2 | ...
-        cur.execute("SELECT target_autonomy_days FROM tank_environment LIMIT 1")
+        # Drift value for display
+        cur.execute("SELECT target_autonomy_days, drift, drift_seed FROM tank_environment LIMIT 1")
         row_te = cur.fetchone()
         target_days = int(row_te[0]) if row_te else 5
+        drift_val   = float(row_te[1]) if row_te else 0.0
+        seed_val    = row_te[2] if row_te else None
+
+        # Daily usage — pivot by activity + include drift_factor per day
         cur.execute("""
-            SELECT activity_name, day_num, fresh_gal, grey_gal, black_gal
+            SELECT activity_name, day_num, fresh_gal, grey_gal, black_gal, drift_factor
             FROM daily_usage_by_day ORDER BY activity_name, day_num
         """)
         raw = cur.fetchall()
-        # Pivot: group by activity, build { activity, fresh_1, grey_1, back_1, fresh_2, ... }
         by_activity = {}
         for r in raw:
-            name, day, fresh, grey, black = r
+            name, day, fresh, grey, black, factor = r
             if name not in by_activity:
                 by_activity[name] = {"activity": name}
-            by_activity[name][f"fresh_{day}"] = round(fresh, 2)
-            by_activity[name][f"grey_{day}"] = round(grey, 2)
-            by_activity[name][f"back_{day}"] = round(black, 2)
-        # Preserve activity order from activity_results
+            by_activity[name][f"fresh_{day}"]  = round(fresh, 2)
+            by_activity[name][f"grey_{day}"]   = round(grey, 2)
+            by_activity[name][f"back_{day}"]   = round(black, 2)
+            by_activity[name][f"factor_{day}"] = round(factor, 3)
+
         order = {r["activity_name"]: i for i, r in enumerate(activity_results)}
         daily_usage_by_day = sorted(by_activity.values(), key=lambda x: order.get(x["activity"], 999))
 
@@ -251,6 +262,8 @@ def get_results():
             "activity_results": activity_results,
             "daily_usage_by_day": daily_usage_by_day,
             "target_days": target_days,
+            "drift": drift_val,
+            "drift_seed": seed_val,
             "tank_projections": tank_projections,
             "stability_score": stability_score,
         }

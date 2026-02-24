@@ -21,6 +21,8 @@
       --success: #34d399;
       --warning: #fbbf24;
       --danger: #f87171;
+      --drift-high: rgba(251,191,36,0.12);
+      --drift-low:  rgba(99,210,255,0.10);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -30,28 +32,15 @@
       min-height: 100vh;
       line-height: 1.5;
     }
-    #app {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 1.5rem;
-    }
+    #app { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
     header {
       text-align: center;
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
       border-bottom: 1px solid var(--border);
     }
-    h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: -0.02em;
-    }
-    .tabs {
-      display: flex;
-      gap: 0.25rem;
-      margin-bottom: 1.5rem;
-    }
+    h1 { font-size: 1.75rem; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
+    .tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; }
     .tab {
       padding: 0.6rem 1.25rem;
       background: var(--bg-card);
@@ -63,11 +52,7 @@
       transition: all 0.2s;
     }
     .tab:hover { color: var(--text); border-color: var(--accent-dim); }
-    .tab.active {
-      background: var(--accent-dim);
-      color: var(--bg-dark);
-      border-color: var(--accent);
-    }
+    .tab.active { background: var(--accent-dim); color: var(--bg-dark); border-color: var(--accent); }
     .panel { display: none; }
     .panel.active { display: block; }
     .section {
@@ -92,15 +77,8 @@
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 1rem;
     }
-    .form-row {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-    .form-row label {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
+    .form-row { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-row label { font-size: 0.85rem; color: var(--text-muted); }
     .form-row input, .form-row select {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.9rem;
@@ -113,27 +91,92 @@
     .form-row input:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+      box-shadow: 0 0 0 2px rgba(34,211,238,0.2);
     }
-    .form-row input[readonly] {
-      opacity: 0.7;
-      cursor: default;
+    .form-row input[readonly] { opacity: 0.7; cursor: default; }
+
+    /* ── Drift control ─────────────────────────────────────── */
+    .drift-row {
+      grid-column: 1 / -1;          /* full width in the grid */
+      background: #0d1b26;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .drift-row .drift-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drift-row .drift-label {
       font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
-    th, td {
-      padding: 0.5rem 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-    th {
-      color: var(--text-muted);
-      font-weight: 500;
+    .drift-row .drift-desc {
       font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
     }
+    .drift-value-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--warning);
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      min-width: 52px;
+      text-align: center;
+    }
+    .drift-range-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .drift-range-row span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) calc(var(--drift-pct, 0) * 1%),
+        var(--border) calc(var(--drift-pct, 0) * 1%),
+        var(--border) 100%
+      );
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg-dark);
+      box-shadow: 0 0 4px rgba(34,211,238,0.5);
+    }
+    .drift-band-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+    .drift-band-label span { color: var(--warning); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Tables ────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
     td input {
       width: 100%;
       max-width: 90px;
@@ -145,10 +188,36 @@
       border-radius: 4px;
       color: var(--text);
     }
-    td input:focus {
-      outline: none;
-      border-color: var(--accent);
+    td input:focus { outline: none; border-color: var(--accent); }
+
+    /* daily usage drift colouring */
+    td.drift-above { background: var(--drift-high); }
+    td.drift-below { background: var(--drift-low); }
+    td.factor-cell {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
     }
+    td.factor-high { color: var(--warning); }
+    td.factor-low  { color: var(--accent); }
+    .drift-legend {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .drift-legend .swatch {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .swatch-high { background: rgba(251,191,36,0.4); }
+    .swatch-low  { background: rgba(99,210,255,0.3); }
+
+    /* ── Misc ──────────────────────────────────────────────── */
     .btn {
       font-family: 'Outfit', sans-serif;
       font-weight: 500;
@@ -158,16 +227,9 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-primary {
-      background: var(--accent);
-      color: var(--bg-dark);
-    }
+    .btn-primary { background: var(--accent); color: var(--bg-dark); }
     .btn-primary:hover { background: #67e8f9; }
-    .btn-secondary {
-      background: var(--bg-input);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
+    .btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
     .btn-secondary:hover { border-color: var(--accent-dim); }
     .save-bar {
       position: sticky;
@@ -202,7 +264,76 @@
     }
     .stability-item .label { font-size: 0.8rem; color: var(--text-muted); }
     .stability-item .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
-    .loading { opacity: 0.6; pointer-events: none; }
+    .drift-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 20px;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.25);
+      color: var(--warning);
+      margin-left: 0.5rem;
+    }
+    /* ── Seed control ──────────────────────────────────────── */
+    .seed-row {
+      margin-top: 0.6rem;
+      padding-top: 0.6rem;
+      border-top: 1px solid rgba(51,65,85,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .seed-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .seed-hint {
+      font-size: 0.74rem;
+      color: #475569;
+    }
+    .seed-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .seed-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      padding: 0.38rem 0.6rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      width: 120px;
+    }
+    .seed-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(34,211,238,0.15);
+    }
+    .seed-clear {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0.28rem 0.5rem;
+      transition: all 0.15s;
+    }
+    .seed-clear:hover { border-color: var(--danger); color: var(--danger); }
+    .seed-status {
+      font-size: 0.78rem;
+      color: var(--warning);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .seed-status.unlocked { color: var(--text-muted); }
   </style>
 </head>
 <body>
@@ -217,20 +348,16 @@
       <button class="tab" :class="{ active: tab === 'results' }" @click="tab = 'results'; refreshResults()">Results</button>
     </div>
 
-    <!-- INPUT TAB -->
+    <!-- ═══════════════ INPUT TAB ═══════════════ -->
     <div class="panel" :class="{ active: tab === 'input' }">
+
+      <!-- Section 1 — People -->
       <div class="section" v-if="inputs">
         <h2>📋 Section 1 — People Inputs <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
         <div class="form-grid">
           <div class="form-row" v-for="u in inputs.user_types" :key="u.name + u.is_child">
             <label>{{ u.name }} <span v-if="u.is_child">(children)</span></label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              v-model.number="u.count"
-              :readonly="u.name === 'Adults Total'"
-            />
+            <input type="number" min="0" step="1" v-model.number="u.count" :readonly="u.name === 'Adults Total'" />
           </div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.75rem;">
@@ -238,6 +365,7 @@
         </p>
       </div>
 
+      <!-- Section 2 — Tank & Environment -->
       <div class="section" v-if="inputs?.tank_environment">
         <h2>🛢️ Section 2 — Tank & Environment</h2>
         <div class="form-grid">
@@ -273,9 +401,73 @@
             <label>Target Autonomy Days</label>
             <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
           </div>
+
+          <!-- ── Drift control — full width ── -->
+          <div class="drift-row">
+            <div class="drift-top">
+              <div>
+                <div class="drift-label">🎲 Behavioral Drift</div>
+                <div class="drift-desc">
+                  Models day-to-day unpredictability per activity using a normal distribution
+                  centred at 1.0 with σ = drift ÷ 2, clipped to [1−drift, 1+drift].
+                </div>
+              </div>
+              <div class="drift-value-badge">{{ driftPct }}</div>
+            </div>
+            <div class="drift-range-row">
+              <span>0 — none</span>
+              <input
+                type="range" min="0" max="1" step="0.01"
+                v-model.number="inputs.tank_environment.drift"
+                :style="{ '--drift-pct': inputs.tank_environment.drift * 100 }"
+              />
+              <span>1 — max</span>
+            </div>
+            <div class="drift-band-label" v-if="inputs.tank_environment.drift > 0">
+              Each activity day-value drawn from
+              <span>N(1.0, {{ driftSd }})</span>
+              clipped to
+              <span>[{{ driftLo }}, {{ driftHi }}]</span>
+            </div>
+            <div class="drift-band-label" v-else style="color:#475569;">
+              Drift = 0 — all days use exact baseline values (deterministic)
+            </div>
+
+            <!-- Seed control -->
+            <div class="seed-row" v-if="inputs.tank_environment.drift > 0">
+              <label class="seed-label">
+                🔒 Random Seed
+                <span class="seed-hint">integer = locked & reproducible &nbsp;|&nbsp; blank = fresh random each run</span>
+              </label>
+              <div class="seed-input-wrap">
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  class="seed-input"
+                  :value="inputs.tank_environment.drift_seed ?? ''"
+                  @input="onSeedInput($event)"
+                  placeholder="e.g. 42"
+                />
+                <button
+                  class="seed-clear"
+                  title="Clear seed (random each run)"
+                  v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined"
+                  @click="inputs.tank_environment.drift_seed = null"
+                >✕</button>
+                <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">
+                  🔒 locked
+                </span>
+                <span class="seed-status unlocked" v-else>
+                  🎲 random
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Section 3 — Behavior Multipliers -->
       <div class="section" v-if="inputs?.behavior_multipliers">
         <h2>🧠 Section 3 — Behavior Multipliers</h2>
         <table>
@@ -300,6 +492,7 @@
         </table>
       </div>
 
+      <!-- Section 4 — Activity Engine -->
       <div class="section" v-if="inputs?.activities">
         <h2>⚡ Section 4 — Activity Engine</h2>
         <table>
@@ -334,8 +527,10 @@
       </div>
     </div>
 
-    <!-- RESULTS TAB -->
+    <!-- ═══════════════ RESULTS TAB ═══════════════ -->
     <div class="panel" :class="{ active: tab === 'results' }">
+
+      <!-- Effective multipliers -->
       <div class="section" v-if="results">
         <h2>🧠 Effective Multipliers (SUMPRODUCT)</h2>
         <div class="form-grid">
@@ -354,10 +549,27 @@
         </div>
       </div>
 
+      <!-- Daily usage by day -->
       <div class="section" v-if="results?.daily_usage_by_day?.length">
-        <h2>📅 Daily Usage by Target Day</h2>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Usage split across {{ results.target_days || 0 }} target days (gal/day per activity)
+        <h2>
+          📅 Daily Usage by Target Day
+          <span class="drift-chip" v-if="results.drift > 0">
+            🎲 drift {{ results.drift?.toFixed(2) }}
+            <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">
+              &nbsp;🔒 seed {{ results.drift_seed }}
+            </template>
+            <template v-else>
+              &nbsp;🎲 random
+            </template>
+          </span>
+        </h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Usage across {{ results.target_days || 0 }} days (gal/day per activity).
+          <template v-if="results.drift > 0">
+            Each cell scaled by a draw from N(1.0, {{ (results.drift / 2).toFixed(2) }}).
+            Factor shown in small text — <span style="color:var(--warning);">warm = above baseline</span>,
+            <span style="color:var(--accent);">cool = below baseline</span>.
+          </template>
         </p>
         <div class="table-scroll">
           <table class="results-table">
@@ -370,19 +582,37 @@
             <tbody>
               <tr v-for="row in results.daily_usage_by_day" :key="row.activity">
                 <td>{{ row.activity }}</td>
-                <td v-for="d in dayColumns" :key="d.key" class="num">{{ row[d.key]?.toFixed(2) ?? '—' }}</td>
+                <td
+                  v-for="d in dayColumns"
+                  :key="d.key"
+                  class="num"
+                  :class="driftClass(row, d)"
+                >
+                  {{ row[d.key]?.toFixed(2) ?? '—' }}
+                  <div
+                    v-if="d.isFresh && results.drift > 0 && row[d.factorKey] !== undefined"
+                    class="factor-cell"
+                    :class="row[d.factorKey] > 1 ? 'factor-high' : 'factor-low'"
+                    style="font-size:0.68rem; line-height:1; margin-top:2px;"
+                  >×{{ row[d.factorKey]?.toFixed(3) }}</div>
+                </td>
               </tr>
-              <tr style="font-weight: 600; border-top: 2px solid var(--border);">
+              <tr style="font-weight:600; border-top:2px solid var(--border);">
                 <td>TOTAL</td>
                 <td v-for="d in dayColumns" :key="'tot-' + d.key" class="num">{{ dayTotal(d.key) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <div class="drift-legend" v-if="results.drift > 0">
+          <span><span class="swatch swatch-high"></span>Above baseline</span>
+          <span><span class="swatch swatch-low"></span>Below baseline</span>
+        </div>
       </div>
 
+      <!-- Activity results -->
       <div class="section" v-if="results?.activity_results?.length">
-        <h2>⚡ Activity Engine — Daily Results</h2>
+        <h2>⚡ Activity Engine — Daily Baseline</h2>
         <table class="results-table">
           <thead>
             <tr>
@@ -401,7 +631,7 @@
               <td>{{ r.black_added_gal?.toFixed(2) }}</td>
               <td>{{ r.fresh_attrib_pct?.toFixed(1) }}%</td>
             </tr>
-            <tr style="font-weight: 600; border-top: 2px solid var(--border);">
+            <tr style="font-weight:600; border-top:2px solid var(--border);">
               <td>TOTAL</td>
               <td>{{ totalFresh?.toFixed(2) }}</td>
               <td>{{ totalGrey?.toFixed(2) }}</td>
@@ -412,8 +642,9 @@
         </table>
       </div>
 
+      <!-- Tank Projections -->
       <div class="section" v-if="results?.tank_projections?.length">
-        <h2>🔋 Tank Projections</h2>
+        <h2>🔋 Tank Projections <span class="badge">based on deterministic baseline</span></h2>
         <table class="results-table">
           <thead>
             <tr>
@@ -438,6 +669,7 @@
         </table>
       </div>
 
+      <!-- Stability Score -->
       <div class="section" v-if="results?.stability_score">
         <h2>🎯 Stability Score</h2>
         <div class="stability-card">
@@ -488,31 +720,43 @@
       computed: {
         adultsTotal() {
           if (!this.inputs?.user_types) return 0;
-          return this.inputs.user_types
-            .filter(u => !u.is_child)
-            .reduce((s, u) => s + (u.count || 0), 0);
+          return this.inputs.user_types.filter(u => !u.is_child).reduce((s, u) => s + (u.count || 0), 0);
         },
         totalFresh() {
-          if (!this.results?.activity_results) return 0;
-          return this.results.activity_results.reduce((s, r) => s + (r.daily_fresh_gal || 0), 0);
+          return this.results?.activity_results?.reduce((s, r) => s + (r.daily_fresh_gal || 0), 0) ?? 0;
         },
         totalGrey() {
-          if (!this.results?.activity_results) return 0;
-          return this.results.activity_results.reduce((s, r) => s + (r.grey_added_gal || 0), 0);
+          return this.results?.activity_results?.reduce((s, r) => s + (r.grey_added_gal || 0), 0) ?? 0;
         },
         totalBlack() {
-          if (!this.results?.activity_results) return 0;
-          return this.results.activity_results.reduce((s, r) => s + (r.black_added_gal || 0), 0);
+          return this.results?.activity_results?.reduce((s, r) => s + (r.black_added_gal || 0), 0) ?? 0;
         },
         dayColumns() {
           const days = this.results?.target_days || 5;
           const cols = [];
           for (let d = 1; d <= days; d++) {
-            cols.push({ key: `fresh_${d}`, label: `fresh_${d}` });
-            cols.push({ key: `grey_${d}`, label: `grey_${d}` });
-            cols.push({ key: `back_${d}`, label: `back_${d}` });
+            cols.push({ key: `fresh_${d}`, factorKey: `factor_${d}`, label: `fresh_${d}`, isFresh: true });
+            cols.push({ key: `grey_${d}`,  factorKey: `factor_${d}`, label: `grey_${d}`,  isFresh: false });
+            cols.push({ key: `back_${d}`,  factorKey: `factor_${d}`, label: `back_${d}`,  isFresh: false });
           }
           return cols;
+        },
+        // Drift display helpers
+        driftPct() {
+          const d = this.inputs?.tank_environment?.drift ?? 0;
+          return (d * 100).toFixed(0) + '%';
+        },
+        driftSd() {
+          const d = this.inputs?.tank_environment?.drift ?? 0;
+          return (d / 2).toFixed(2);
+        },
+        driftLo() {
+          const d = this.inputs?.tank_environment?.drift ?? 0;
+          return (1 - d).toFixed(2);
+        },
+        driftHi() {
+          const d = this.inputs?.tank_environment?.drift ?? 0;
+          return (1 + d).toFixed(2);
         },
       },
       mounted() {
@@ -568,16 +812,28 @@
             this.saving = false;
           }
         },
+        onSeedInput(e) {
+          const val = e.target.value.trim();
+          this.inputs.tank_environment.drift_seed = val === '' ? null : parseInt(val, 10);
+        },
         dayTotal(key) {
           if (!this.results?.daily_usage_by_day?.length) return '—';
-          const sum = this.results.daily_usage_by_day.reduce((s, r) => s + (r[key] || 0), 0);
-          return sum.toFixed(2);
+          return this.results.daily_usage_by_day.reduce((s, r) => s + (r[key] || 0), 0).toFixed(2);
         },
         statusClass(s) {
           if (!s) return '';
           if (s.includes('On Track') || s.includes('Full Autonomy')) return 'status-ok';
           if (s.includes('Low') || s.includes('Full') || s.includes('Good') || s.includes('Marginal')) return 'status-warn';
           return 'status-bad';
+        },
+        // Colour daily-usage cells based on drift factor
+        driftClass(row, col) {
+          if (!this.results?.drift) return '';
+          const factor = row[col.factorKey];
+          if (factor === undefined) return '';
+          if (factor > 1.02)  return 'drift-above';
+          if (factor < 0.98)  return 'drift-below';
+          return '';
         },
       },
     }).mount('#app');

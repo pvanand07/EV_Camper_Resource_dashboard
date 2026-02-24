@@ -8,6 +8,7 @@ import sqlite3
 import math
 import os
 import sys
+import random
 
 # Ensure UTF-8 output on Windows so emoji/box-drawing characters print correctly
 if os.name == "nt" and hasattr(sys.stdout, "reconfigure"):
@@ -31,9 +32,9 @@ def create_db(conn: sqlite3.Connection):
     -- SECTION 1: People Inputs
     CREATE TABLE user_type (
         id       INTEGER PRIMARY KEY AUTOINCREMENT,
-        name     TEXT NOT NULL,          -- Expert / Typical / Glamper / Children
+        name     TEXT NOT NULL,
         count    INTEGER NOT NULL,
-        is_child INTEGER NOT NULL DEFAULT 0  -- 1 = children row
+        is_child INTEGER NOT NULL DEFAULT 0
     );
 
     -- SECTION 2: Tank & Environment
@@ -46,7 +47,9 @@ def create_db(conn: sqlite3.Connection):
         current_grey_gal     REAL NOT NULL DEFAULT 0,
         current_black_gal    REAL NOT NULL DEFAULT 0,
         climate_multiplier   REAL NOT NULL DEFAULT 1.0,
-        target_autonomy_days REAL NOT NULL DEFAULT 5
+        target_autonomy_days REAL NOT NULL DEFAULT 5,
+        drift                REAL NOT NULL DEFAULT 0.0,  -- 0=none, 1=max. controls per-day normal drift
+        drift_seed           INTEGER                     -- NULL = random each run, integer = locked seed
     );
 
     -- SECTION 3: Behavior Multipliers per user type
@@ -62,10 +65,10 @@ def create_db(conn: sqlite3.Connection):
     CREATE TABLE activity (
         id                         INTEGER PRIMARY KEY AUTOINCREMENT,
         name                       TEXT NOT NULL,
-        flow_gal_per_min           REAL,     -- NULL for toilet/drinking
-        duration_min               REAL,     -- NULL for toilet/drinking
+        flow_gal_per_min           REAL,
+        duration_min               REAL,
         events_per_day_per_person  REAL,
-        gal_per_unit               REAL,     -- flush size or drinking gal
+        gal_per_unit               REAL,
         grey_pct                   REAL NOT NULL DEFAULT 0,
         black_pct                  REAL NOT NULL DEFAULT 0,
         uses_shower_mult           INTEGER NOT NULL DEFAULT 0,
@@ -75,33 +78,34 @@ def create_db(conn: sqlite3.Connection):
         uses_children              INTEGER NOT NULL DEFAULT 0
     );
 
-    -- SECTION 4: Activity Engine — computed daily results
+    -- SECTION 4: Activity Engine — computed daily results (deterministic baseline)
     CREATE TABLE activity_result (
         id               INTEGER PRIMARY KEY AUTOINCREMENT,
         activity_name    TEXT NOT NULL,
         daily_fresh_gal  REAL NOT NULL,
         grey_added_gal   REAL NOT NULL,
         black_added_gal  REAL NOT NULL,
-        fresh_attrib_pct REAL NOT NULL    -- % of total daily fresh
+        fresh_attrib_pct REAL NOT NULL
     );
 
-    -- SECTION 4: Daily usage split across target days (per activity, per day)
+    -- SECTION 4: Daily usage split across target days (per activity, per day, with drift applied)
     CREATE TABLE daily_usage_by_day (
         id               INTEGER PRIMARY KEY AUTOINCREMENT,
         activity_name    TEXT NOT NULL,
         day_num          INTEGER NOT NULL,
         fresh_gal        REAL NOT NULL,
         grey_gal         REAL NOT NULL,
-        black_gal        REAL NOT NULL
+        black_gal        REAL NOT NULL,
+        drift_factor     REAL NOT NULL DEFAULT 1.0   -- the drawn multiplier for transparency
     );
 
     -- SECTION 5: Tank Projections
     CREATE TABLE tank_projection (
         id               INTEGER PRIMARY KEY AUTOINCREMENT,
-        tank             TEXT NOT NULL,   -- Fresh / Grey / Black
+        tank             TEXT NOT NULL,
         capacity_gal     REAL NOT NULL,
         current_gal      REAL NOT NULL,
-        daily_delta_gal  REAL NOT NULL,   -- negative=draining, positive=filling
+        daily_delta_gal  REAL NOT NULL,
         days_remaining   REAL NOT NULL,
         status           TEXT NOT NULL
     );
@@ -122,7 +126,6 @@ def create_db(conn: sqlite3.Connection):
 def seed_data(conn: sqlite3.Connection):
     cur = conn.cursor()
 
-    # Section 1 — People
     cur.executemany(
         "INSERT INTO user_type (name, count, is_child) VALUES (?,?,?)",
         [
@@ -133,16 +136,14 @@ def seed_data(conn: sqlite3.Connection):
         ]
     )
 
-    # Section 2 — Tank & Environment
     cur.execute("""
         INSERT INTO tank_environment
           (fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
            current_fresh_gal,  current_grey_gal,  current_black_gal,
-           climate_multiplier, target_autonomy_days)
-        VALUES (100, 80, 40, 0, 0, 0, 1.0, 5)
+           climate_multiplier, target_autonomy_days, drift)
+        VALUES (100, 80, 40, 0, 0, 0, 1.0, 5, 0.0, NULL)
     """)
 
-    # Section 3 — Behavior Multipliers
     cur.executemany(
         "INSERT INTO behavior_multiplier "
         "(user_type, shower_mult, sink_mult, toilet_mult) VALUES (?,?,?,?)",
@@ -153,8 +154,6 @@ def seed_data(conn: sqlite3.Connection):
         ]
     )
 
-    # Section 4 — Activities
-    # Columns: name, flow, dur, events, gal_unit, grey, black, sh, sk, tl, ad, ch
     cur.executemany("""
         INSERT INTO activity
           (name, flow_gal_per_min, duration_min, events_per_day_per_person,
@@ -174,9 +173,11 @@ def seed_data(conn: sqlite3.Connection):
     conn.commit()
 
 
-def _ensure_daily_usage_table(conn: sqlite3.Connection):
-    """Create daily_usage_by_day table if missing (migration for existing DBs)."""
+def _migrate(conn: sqlite3.Connection):
+    """Add missing columns to existing DBs without dropping tables."""
     cur = conn.cursor()
+
+    # daily_usage_by_day table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS daily_usage_by_day (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,30 +185,82 @@ def _ensure_daily_usage_table(conn: sqlite3.Connection):
             day_num          INTEGER NOT NULL,
             fresh_gal        REAL NOT NULL,
             grey_gal         REAL NOT NULL,
-            black_gal        REAL NOT NULL
+            black_gal        REAL NOT NULL,
+            drift_factor     REAL NOT NULL DEFAULT 1.0
         )
     """)
+
+    # drift_factor column on existing daily_usage_by_day
+    try:
+        cur.execute("ALTER TABLE daily_usage_by_day ADD COLUMN drift_factor REAL NOT NULL DEFAULT 1.0")
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    # drift column on tank_environment
+    try:
+        cur.execute("ALTER TABLE tank_environment ADD COLUMN drift REAL NOT NULL DEFAULT 0.0")
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    # drift_seed column on tank_environment
+    try:
+        cur.execute("ALTER TABLE tank_environment ADD COLUMN drift_seed INTEGER")
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    conn.commit()
+
+
+def _drift_multiplier(drift: float, rng: random.Random) -> float:
+    """
+    Draw a multiplier from a truncated normal distribution using the supplied RNG.
+
+    Centre = 1.0, std = drift / 2
+    Hard clamp to [1 - drift, 1 + drift] to keep it bounded.
+    When drift = 0 returns exactly 1.0 (no noise).
+    """
+    if drift <= 0.0:
+        return 1.0
+    lo = max(0.0, 1.0 - drift)
+    hi = 1.0 + drift
+    std = drift / 2.0
+    # Rejection-sample until we land inside [lo, hi] (converges very fast)
+    for _ in range(50):
+        v = rng.gauss(1.0, std)
+        if lo <= v <= hi:
+            return v
+    # Fallback: clamp
+    return max(lo, min(hi, rng.gauss(1.0, std)))
 
 
 def compute_and_store(conn: sqlite3.Connection):
     cur = conn.cursor()
-    _ensure_daily_usage_table(conn)
+    _migrate(conn)
 
     # ── Load people
     cur.execute("SELECT name, count, is_child FROM user_type")
     users        = cur.fetchall()
-    adults_total = sum(r[1] for r in users if r[2] == 0)  # auto-sum adults
+    adults_total = sum(r[1] for r in users if r[2] == 0)
     children     = next((r[1] for r in users if r[2] == 1), 0)
 
-    # ── Load environment
+    # ── Load environment (including drift)
     cur.execute("SELECT * FROM tank_environment LIMIT 1")
+    row = cur.fetchone()
     (_, fresh_cap, grey_cap, black_cap,
      cur_fresh, cur_grey, cur_black,
-     climate_mult, target_days) = cur.fetchone()
+     climate_mult, target_days, drift, drift_seed) = row
+
+    # Per-cell RNG factory.
+    # When drift_seed is set: each (activity, day) gets its own Random instance seeded
+    # by hash((drift_seed, name, day)) — fully reproducible regardless of iteration order.
+    # When drift_seed is None: each cell gets a fresh unseeded Random() — random every run.
+    def make_rng(name: str, day: int) -> random.Random:
+        if drift_seed is not None:
+            return random.Random(hash((int(drift_seed), name, day)))
+        return random.Random()
 
     # ── Section 3: Effective multipliers via SUMPRODUCT
-    cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult "
-                "FROM behavior_multiplier")
+    cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
     mults     = {r[0]: r[1:] for r in cur.fetchall()}
     count_map = {r[0]: r[1] for r in users if r[2] == 0}
 
@@ -215,7 +268,7 @@ def compute_and_store(conn: sqlite3.Connection):
     eff_sink   = sum(count_map[ut] * mults[ut][1] for ut in count_map)
     eff_toilet = sum(count_map[ut] * mults[ut][2] for ut in count_map)
 
-    # ── Section 4: Daily fresh per activity
+    # ── Section 4: Baseline daily fresh per activity (deterministic)
     cur.execute("""
         SELECT name, flow_gal_per_min, duration_min, events_per_day_per_person,
                gal_per_unit, grey_pct, black_pct,
@@ -229,15 +282,15 @@ def compute_and_store(conn: sqlite3.Connection):
          grey_pct, black_pct, sh, sk, tl, ad, ch) in cur.fetchall():
 
         if sh:
-            fresh = eff_shower * flow * dur * events     # Shower
+            fresh = eff_shower * flow * dur * events
         elif sk:
-            fresh = eff_sink   * flow * dur * events     # Kitchen / Bathroom Sink
+            fresh = eff_sink   * flow * dur * events
         elif tl:
-            fresh = eff_toilet * gal_unit * events       # Toilet
+            fresh = eff_toilet * gal_unit * events
         elif ad:
-            fresh = adults_total * gal_unit * climate_mult   # Drinking Adults
+            fresh = adults_total * gal_unit * climate_mult
         elif ch:
-            fresh = children     * gal_unit * climate_mult   # Drinking Children
+            fresh = children     * gal_unit * climate_mult
         else:
             fresh = 0.0
 
@@ -245,7 +298,7 @@ def compute_and_store(conn: sqlite3.Connection):
 
     total_fresh = sum(c[1] for c in computed)
 
-    # ── Store ActivityResult
+    # ── Store ActivityResult (always deterministic baseline — no drift here)
     cur.execute("DELETE FROM activity_result")
     for name, fresh, grey_pct, black_pct in computed:
         attrib = (fresh / total_fresh * 100) if total_fresh > 0 else 0
@@ -263,20 +316,30 @@ def compute_and_store(conn: sqlite3.Connection):
     total_grey  = sum(c[1] * c[2] for c in computed)
     total_black = sum(c[1] * c[3] for c in computed)
 
-    # ── Daily usage split across target days (same values per day)
+    # ── Daily usage split across target days with per-day, per-activity drift
+    # Each (activity × day) gets an independently drawn drift multiplier from
+    # N(1.0, (drift/2)²) truncated to [1-drift, 1+drift].
     cur.execute("DELETE FROM daily_usage_by_day")
     target_days_int = max(1, int(target_days))
+
     for name, fresh, grey_pct, black_pct in computed:
-        grey_val = round(fresh * grey_pct, 4)
-        black_val = round(fresh * black_pct, 4)
         for day in range(1, target_days_int + 1):
+            factor = _drift_multiplier(drift, make_rng(name, day))
+            drifted_fresh = fresh * factor
             cur.execute("""
                 INSERT INTO daily_usage_by_day
-                  (activity_name, day_num, fresh_gal, grey_gal, black_gal)
-                VALUES (?,?,?,?,?)
-            """, (name, day, round(fresh, 4), grey_val, black_val))
+                  (activity_name, day_num, fresh_gal, grey_gal, black_gal, drift_factor)
+                VALUES (?,?,?,?,?,?)
+            """, (
+                name,
+                day,
+                round(drifted_fresh, 4),
+                round(drifted_fresh * grey_pct, 4),
+                round(drifted_fresh * black_pct, 4),
+                round(factor, 4),
+            ))
 
-    # ── Section 5: Tank projections
+    # ── Section 5: Tank projections (use deterministic baseline totals)
     def safe_days(numerator, rate):
         return (numerator / rate) if rate > 0 else math.inf
 
@@ -367,8 +430,8 @@ def print_results(conn: sqlite3.Connection, effs):
     row = cur.fetchone()
     labels = ["Fresh Tank Capacity", "Grey Tank Capacity",  "Black Tank Capacity",
               "Current Fresh Level", "Current Grey Level",  "Current Black Level",
-              "Climate Multiplier",  "Target Autonomy Days"]
-    units  = ["gal","gal","gal","gal","gal","gal","×","days"]
+              "Climate Multiplier",  "Target Autonomy Days", "Drift"]
+    units  = ["gal","gal","gal","gal","gal","gal","×","days","0–1"]
     for i, (lbl, unit) in enumerate(zip(labels, units)):
         print(f"  {lbl:<26} {row[i+1]:>8.2f}  {unit}")
 
@@ -379,8 +442,7 @@ def print_results(conn: sqlite3.Connection, effs):
     cur2 = conn.cursor()
     cur2.execute("SELECT name, count FROM user_type WHERE is_child=0")
     count_map = {r[0]: r[1] for r in cur2.fetchall()}
-    cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult "
-                "FROM behavior_multiplier")
+    cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
     for ut, sh, sk, tl in cur.fetchall():
         print(f"  {ut:<12} {count_map.get(ut,0):>6}  {sh:>8.1f}  {sk:>8.1f}  {tl:>8.1f}")
     print(f"  {'─'*50}")
@@ -388,7 +450,7 @@ def print_results(conn: sqlite3.Connection, effs):
           f"{eff_sink:>8.2f}  {eff_toilet:>8.2f}  ← SUMPRODUCT")
 
     # ── Section 4
-    print(f"\n⚡  SECTION 4 — ACTIVITY ENGINE")
+    print(f"\n⚡  SECTION 4 — ACTIVITY ENGINE (baseline)")
     print(f"  {'Activity':<24} {'Fresh/day':>10}  {'Grey/day':>9}  "
           f"{'Black/day':>10}  {'Attrib%':>8}")
     print(f"  {'─'*66}")
@@ -444,11 +506,11 @@ def print_results(conn: sqlite3.Connection, effs):
 
 if __name__ == "__main__":
     if os.path.exists(DB_PATH):
-        os.remove(DB_PATH)          # fresh run every time
+        os.remove(DB_PATH)
 
     conn = sqlite3.connect(DB_PATH)
-    create_db(conn)                 # create all 7 tables
-    seed_data(conn)                 # insert editable inputs
-    effs = compute_and_store(conn)  # run engine, write results
-    print_results(conn, effs)       # display all sections
+    create_db(conn)
+    seed_data(conn)
+    effs = compute_and_store(conn)
+    print_results(conn, effs)
     conn.close()
