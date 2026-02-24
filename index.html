@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💧 Water Intelligence Engine v2</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f1419;
+      --bg-card: #1a2332;
+      --bg-input: #0d1117;
+      --accent: #22d3ee;
+      --accent-dim: #0891b2;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    #app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .tab {
+      padding: 0.6rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--text); border-color: var(--accent-dim); }
+    .tab.active {
+      background: var(--accent-dim);
+      color: var(--bg-dark);
+      border-color: var(--accent);
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .section {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+    }
+    .section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section h2 .badge { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .form-row label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .form-row input, .form-row select {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.65rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+    }
+    .form-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+    }
+    .form-row input[readonly] {
+      opacity: 0.7;
+      cursor: default;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+    td input {
+      width: 100%;
+      max-width: 90px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.5rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+    }
+    td input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg-dark);
+    }
+    .btn-primary:hover { background: #67e8f9; }
+    .btn-secondary {
+      background: var(--bg-input);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent-dim); }
+    .save-bar {
+      position: sticky;
+      bottom: 0;
+      background: var(--bg-dark);
+      padding: 1rem 0;
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .save-bar .msg { font-size: 0.9rem; color: var(--success); }
+    .save-bar .msg.err { color: var(--danger); }
+    .results-table { font-family: 'JetBrains Mono', monospace; }
+    .results-table td:not(:first-child) { text-align: right; }
+    .results-table td.num { text-align: right; }
+    .table-scroll { overflow-x: auto; }
+    .status-ok { color: var(--success); }
+    .status-warn { color: var(--warning); }
+    .status-bad { color: var(--danger); }
+    .stability-card {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .stability-item {
+      background: var(--bg-input);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .stability-item .label { font-size: 0.8rem; color: var(--text-muted); }
+    .stability-item .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
+    .loading { opacity: 0.6; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>💧 Water Intelligence Engine v2</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">Unified architecture — edit inputs, view computed results</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab" :class="{ active: tab === 'input' }" @click="tab = 'input'">Input</button>
+      <button class="tab" :class="{ active: tab === 'results' }" @click="tab = 'results'; refreshResults()">Results</button>
+    </div>
+
+    <!-- INPUT TAB -->
+    <div class="panel" :class="{ active: tab === 'input' }">
+      <div class="section" v-if="inputs">
+        <h2>📋 Section 1 — People Inputs <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
+        <div class="form-grid">
+          <div class="form-row" v-for="u in inputs.user_types" :key="u.name + u.is_child">
+            <label>{{ u.name }} <span v-if="u.is_child">(children)</span></label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              v-model.number="u.count"
+              :readonly="u.name === 'Adults Total'"
+            />
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.75rem;">
+          Adults Total = {{ adultsTotal }} (auto-sum)
+        </p>
+      </div>
+
+      <div class="section" v-if="inputs?.tank_environment">
+        <h2>🛢️ Section 2 — Tank & Environment</h2>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Fresh Tank Capacity (gal)</label>
+            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" />
+          </div>
+          <div class="form-row">
+            <label>Grey Tank Capacity (gal)</label>
+            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" />
+          </div>
+          <div class="form-row">
+            <label>Black Tank Capacity (gal)</label>
+            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" />
+          </div>
+          <div class="form-row">
+            <label>Current Fresh Level (gal)</label>
+            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" />
+          </div>
+          <div class="form-row">
+            <label>Current Grey Level (gal)</label>
+            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" />
+          </div>
+          <div class="form-row">
+            <label>Current Black Level (gal)</label>
+            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
+          </div>
+          <div class="form-row">
+            <label>Climate Multiplier (×)</label>
+            <input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" />
+          </div>
+          <div class="form-row">
+            <label>Target Autonomy Days</label>
+            <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section" v-if="inputs?.behavior_multipliers">
+        <h2>🧠 Section 3 — Behavior Multipliers</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>User Type</th>
+              <th>Count</th>
+              <th>Shower Mult</th>
+              <th>Sink Mult</th>
+              <th>Toilet Mult</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="b in inputs.behavior_multipliers" :key="b.user_type">
+              <td>{{ b.user_type }}</td>
+              <td>{{ userCount(b.user_type) }}</td>
+              <td><input type="number" min="0" step="0.1" v-model.number="b.shower_mult" /></td>
+              <td><input type="number" min="0" step="0.1" v-model.number="b.sink_mult" /></td>
+              <td><input type="number" min="0" step="0.1" v-model.number="b.toilet_mult" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" v-if="inputs?.activities">
+        <h2>⚡ Section 4 — Activity Engine</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Activity</th>
+              <th>Flow (gal/min)</th>
+              <th>Duration (min)</th>
+              <th>Events/Day</th>
+              <th>Gal/Unit</th>
+              <th>Grey %</th>
+              <th>Black %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="a in inputs.activities" :key="a.id">
+              <td>{{ a.name }}</td>
+              <td><input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="—" /></td>
+              <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" /></td>
+              <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" /></td>
+              <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" /></td>
+              <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.grey_pct" /></td>
+              <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.black_pct" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn btn-primary" @click="saveInputs" :disabled="saving">Save & Compute</button>
+        <span class="msg" :class="{ err: saveError }" v-if="saveMsg">{{ saveMsg }}</span>
+      </div>
+    </div>
+
+    <!-- RESULTS TAB -->
+    <div class="panel" :class="{ active: tab === 'results' }">
+      <div class="section" v-if="results">
+        <h2>🧠 Effective Multipliers (SUMPRODUCT)</h2>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Shower</label>
+            <input type="text" :value="results.effective_multipliers?.shower?.toFixed(2)" readonly />
+          </div>
+          <div class="form-row">
+            <label>Sink</label>
+            <input type="text" :value="results.effective_multipliers?.sink?.toFixed(2)" readonly />
+          </div>
+          <div class="form-row">
+            <label>Toilet</label>
+            <input type="text" :value="results.effective_multipliers?.toilet?.toFixed(2)" readonly />
+          </div>
+        </div>
+      </div>
+
+      <div class="section" v-if="results?.daily_usage_by_day?.length">
+        <h2>📅 Daily Usage by Target Day</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Usage split across {{ results.target_days || 0 }} target days (gal/day per activity)
+        </p>
+        <div class="table-scroll">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Activity</th>
+                <th v-for="d in dayColumns" :key="d.key">{{ d.label }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in results.daily_usage_by_day" :key="row.activity">
+                <td>{{ row.activity }}</td>
+                <td v-for="d in dayColumns" :key="d.key" class="num">{{ row[d.key]?.toFixed(2) ?? '—' }}</td>
+              </tr>
+              <tr style="font-weight: 600; border-top: 2px solid var(--border);">
+                <td>TOTAL</td>
+                <td v-for="d in dayColumns" :key="'tot-' + d.key" class="num">{{ dayTotal(d.key) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section" v-if="results?.activity_results?.length">
+        <h2>⚡ Activity Engine — Daily Results</h2>
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Activity</th>
+              <th>Fresh/day</th>
+              <th>Grey/day</th>
+              <th>Black/day</th>
+              <th>Attrib %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in results.activity_results" :key="r.activity_name">
+              <td>{{ r.activity_name }}</td>
+              <td>{{ r.daily_fresh_gal?.toFixed(2) }}</td>
+              <td>{{ r.grey_added_gal?.toFixed(2) }}</td>
+              <td>{{ r.black_added_gal?.toFixed(2) }}</td>
+              <td>{{ r.fresh_attrib_pct?.toFixed(1) }}%</td>
+            </tr>
+            <tr style="font-weight: 600; border-top: 2px solid var(--border);">
+              <td>TOTAL</td>
+              <td>{{ totalFresh?.toFixed(2) }}</td>
+              <td>{{ totalGrey?.toFixed(2) }}</td>
+              <td>{{ totalBlack?.toFixed(2) }}</td>
+              <td>100%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" v-if="results?.tank_projections?.length">
+        <h2>🔋 Tank Projections</h2>
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Tank</th>
+              <th>Capacity</th>
+              <th>Current</th>
+              <th>Daily Δ</th>
+              <th>Days Left</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="t in results.tank_projections" :key="t.tank">
+              <td>{{ t.tank }}</td>
+              <td>{{ t.capacity_gal?.toFixed(1) }}</td>
+              <td>{{ t.current_gal?.toFixed(1) }}</td>
+              <td>{{ t.daily_delta_gal > 0 ? '+' : '' }}{{ t.daily_delta_gal?.toFixed(2) }}</td>
+              <td>{{ t.days_remaining >= 9999 ? '∞' : t.days_remaining?.toFixed(2) }}</td>
+              <td :class="statusClass(t.status)">{{ t.status }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" v-if="results?.stability_score">
+        <h2>🎯 Stability Score</h2>
+        <div class="stability-card">
+          <div class="stability-item">
+            <div class="label">Limiting Tank</div>
+            <div class="value">{{ results.stability_score.limiting_tank }}</div>
+          </div>
+          <div class="stability-item">
+            <div class="label">Limiting Days</div>
+            <div class="value">{{ results.stability_score.limiting_days?.toFixed(2) }} days</div>
+          </div>
+          <div class="stability-item">
+            <div class="label">Target Days</div>
+            <div class="value">{{ results.stability_score.target_days }}</div>
+          </div>
+          <div class="stability-item">
+            <div class="label">Score</div>
+            <div class="value">{{ results.stability_score.score_pct?.toFixed(1) }} / 100</div>
+          </div>
+          <div class="stability-item">
+            <div class="label">Rating</div>
+            <div class="value" :class="statusClass(results.stability_score.rating)">{{ results.stability_score.rating }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn btn-secondary" @click="refreshResults">Refresh Results</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+    const API = '/api';
+
+    createApp({
+      data() {
+        return {
+          tab: 'input',
+          inputs: null,
+          results: null,
+          saving: false,
+          saveMsg: '',
+          saveError: false,
+        };
+      },
+      computed: {
+        adultsTotal() {
+          if (!this.inputs?.user_types) return 0;
+          return this.inputs.user_types
+            .filter(u => !u.is_child)
+            .reduce((s, u) => s + (u.count || 0), 0);
+        },
+        totalFresh() {
+          if (!this.results?.activity_results) return 0;
+          return this.results.activity_results.reduce((s, r) => s + (r.daily_fresh_gal || 0), 0);
+        },
+        totalGrey() {
+          if (!this.results?.activity_results) return 0;
+          return this.results.activity_results.reduce((s, r) => s + (r.grey_added_gal || 0), 0);
+        },
+        totalBlack() {
+          if (!this.results?.activity_results) return 0;
+          return this.results.activity_results.reduce((s, r) => s + (r.black_added_gal || 0), 0);
+        },
+        dayColumns() {
+          const days = this.results?.target_days || 5;
+          const cols = [];
+          for (let d = 1; d <= days; d++) {
+            cols.push({ key: `fresh_${d}`, label: `fresh_${d}` });
+            cols.push({ key: `grey_${d}`, label: `grey_${d}` });
+            cols.push({ key: `back_${d}`, label: `back_${d}` });
+          }
+          return cols;
+        },
+      },
+      mounted() {
+        this.loadInputs();
+        this.refreshResults();
+      },
+      methods: {
+        async loadInputs() {
+          try {
+            const r = await fetch(API + '/inputs');
+            this.inputs = await r.json();
+          } catch (e) {
+            this.saveMsg = 'Failed to load inputs: ' + e.message;
+            this.saveError = true;
+          }
+        },
+        async refreshResults() {
+          try {
+            const r = await fetch(API + '/results');
+            this.results = await r.json();
+          } catch (e) {
+            this.saveMsg = 'Failed to load results: ' + e.message;
+            this.saveError = true;
+          }
+        },
+        userCount(userType) {
+          const u = this.inputs?.user_types?.find(x => x.name === userType && !x.is_child);
+          return u ? u.count : 0;
+        },
+        async saveInputs() {
+          this.saving = true;
+          this.saveMsg = '';
+          this.saveError = false;
+          try {
+            const payload = {
+              user_types: this.inputs.user_types,
+              tank_environment: this.inputs.tank_environment,
+              behavior_multipliers: this.inputs.behavior_multipliers,
+              activities: this.inputs.activities,
+            };
+            const r = await fetch(API + '/inputs', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (!r.ok) throw new Error(await r.text());
+            this.saveMsg = 'Saved. Results updated.';
+            await this.refreshResults();
+          } catch (e) {
+            this.saveMsg = 'Save failed: ' + e.message;
+            this.saveError = true;
+          } finally {
+            this.saving = false;
+          }
+        },
+        dayTotal(key) {
+          if (!this.results?.daily_usage_by_day?.length) return '—';
+          const sum = this.results.daily_usage_by_day.reduce((s, r) => s + (r[key] || 0), 0);
+          return sum.toFixed(2);
+        },
+        statusClass(s) {
+          if (!s) return '';
+          if (s.includes('On Track') || s.includes('Full Autonomy')) return 'status-ok';
+          if (s.includes('Low') || s.includes('Full') || s.includes('Good') || s.includes('Marginal')) return 'status-warn';
+          return 'status-bad';
+        },
+      },
+    }).mount('#app');
+  </script>
+</body>
+</html>
