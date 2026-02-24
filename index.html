@@ -285,14 +285,13 @@
             <tr>
               <th class="th-act">Activity</th>
               <th v-for="d in heatDayNums" :key="d">Day {{ d }}</th>
-              <th>Σ Total</th>
             </tr>
           </thead>
           <tbody>
             <template v-for="group in heatGroups" :key="group.name">
               <!-- Group header -->
               <tr class="grp-hdr">
-                <td class="act-label" :colspan="heatDayNums.length + 2">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
+                <td class="act-label" :colspan="heatDayNums.length + 1">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
               </tr>
               <!-- Activity rows -->
               <tr v-for="row in group.rows" :key="row.activity">
@@ -303,31 +302,8 @@
                     <span class="cf" v-if="results.drift > 0 && row[`factor_${d}`] !== undefined">×{{ row[`factor_${d}`]?.toFixed(2) }}</span>
                   </div>
                 </td>
-                <td class="heat-td">
-                  <div class="sub-cell">{{ rowTotal(row) }}</div>
-                </td>
-              </tr>
-              <!-- Group subtotal -->
-              <tr class="grp-sub">
-                <td class="act-label"><span class="act-name">Σ {{ group.name }}</span></td>
-                <td class="heat-td" v-for="d in heatDayNums" :key="d">
-                  <div class="sub-cell">{{ groupDayTotal(group, d) }}</div>
-                </td>
-                <td class="heat-td">
-                  <div class="sub-cell" style="color:var(--text);font-weight:700;">{{ groupTotal(group) }}</div>
-                </td>
               </tr>
             </template>
-            <!-- Grand total -->
-            <tr class="grand">
-              <td class="act-label"><span class="act-name">ALL ACTIVITIES</span></td>
-              <td class="heat-td" v-for="d in heatDayNums" :key="d">
-                <div class="sub-cell grand-cell">{{ grandDayTotal(d) }}</div>
-              </td>
-              <td class="heat-td">
-                <div class="sub-cell grand-cell" style="font-size:0.8rem;">{{ grandTotal }}</div>
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>
@@ -417,15 +393,11 @@ const GROUPS = [
   { name: 'Drinking',   icon: '💧', members: ['Drinking (Adults)', 'Drinking (Children)'] },
 ];
 
-// ── 5-stop colour ramps per stream ───────────────────────
-const RAMPS = {
-  fresh: ['#071a1f','#0c3d4d','#0891b2','#22d3ee','#a5f3fc'],
-  grey:  ['#0d1117','#1e293b','#334155','#64748b','#cbd5e1'],
-  black: ['#0d0508','#3b0a0a','#991b1b','#ef4444','#fca5a5'],
-};
+// ── Single 5-stop colour ramp for all heatmap streams ─────
+const HEAT_RAMP = ['#071a1f','#0c3d4d','#0891b2','#22d3ee','#a5f3fc'];
 
 function rampColor(stream, t) {
-  const s = RAMPS[stream];
+  const s = HEAT_RAMP;
   const raw = t * (s.length - 1);
   const lo  = Math.floor(raw), hi = Math.min(lo + 1, s.length - 1);
   const f   = raw - lo;
@@ -470,12 +442,6 @@ createApp({
       if (!rows?.length) return [];
       const byName = Object.fromEntries(rows.map(r=>[r.activity,r]));
       return GROUPS.map(g=>({...g, rows:g.members.map(m=>byName[m]).filter(Boolean)})).filter(g=>g.rows.length);
-    },
-
-    grandTotal() {
-      if (!this.results?.daily_usage_by_day?.length) return '—';
-      const k=this.streamKey, days=this.heatDayNums;
-      return this.results.daily_usage_by_day.reduce((s,row)=>s+days.reduce((ss,d)=>ss+(row[`${k}_${d}`]||0),0),0).toFixed(2);
     },
   },
 
@@ -548,18 +514,6 @@ createApp({
     cellTitle(row, d) {
       const v=row[`${this.streamKey}_${d}`], f=row[`factor_${d}`];
       return `${row.activity} · Day ${d} · ${this.heatStream}: ${v?.toFixed(3)} gal`+(f!=null?`  (×${f.toFixed(4)})`:'');
-    },
-    rowTotal(row) {
-      return this.heatDayNums.reduce((s,d)=>s+(row[`${this.streamKey}_${d}`]||0),0).toFixed(2);
-    },
-    groupDayTotal(group, d) {
-      return group.rows.reduce((s,row)=>s+(row[`${this.streamKey}_${d}`]||0),0).toFixed(2);
-    },
-    groupTotal(group) {
-      return group.rows.reduce((s,row)=>s+this.heatDayNums.reduce((ss,d)=>ss+(row[`${this.streamKey}_${d}`]||0),0),0).toFixed(2);
-    },
-    grandDayTotal(d) {
-      return (this.results?.daily_usage_by_day||[]).reduce((s,row)=>s+(row[`${this.streamKey}_${d}`]||0),0).toFixed(2);
     },
 
     drawScale() {
