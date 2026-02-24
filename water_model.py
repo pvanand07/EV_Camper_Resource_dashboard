@@ -30,7 +30,7 @@ def create_db(conn: sqlite3.Connection):
     DROP TABLE IF EXISTS stability_score;
 
     -- SECTION 1: People Inputs
-    CREATE TABLE user_type (
+    CREATE TABLE IF NOT EXISTS user_type (
         id       INTEGER PRIMARY KEY AUTOINCREMENT,
         name     TEXT NOT NULL,
         count    INTEGER NOT NULL,
@@ -43,7 +43,7 @@ def create_db(conn: sqlite3.Connection):
         fresh_capacity_gal   REAL NOT NULL DEFAULT 100,
         grey_capacity_gal    REAL NOT NULL DEFAULT 80,
         black_capacity_gal   REAL NOT NULL DEFAULT 40,
-        current_fresh_gal    REAL NOT NULL DEFAULT 0,
+        current_fresh_gal    REAL NOT NULL DEFAULT 100,
         current_grey_gal     REAL NOT NULL DEFAULT 0,
         current_black_gal    REAL NOT NULL DEFAULT 0,
         climate_multiplier   REAL NOT NULL DEFAULT 1.0,
@@ -140,7 +140,7 @@ def seed_data(conn: sqlite3.Connection):
         INSERT INTO tank_environment
           (fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
            current_fresh_gal,  current_grey_gal,  current_black_gal,
-           climate_multiplier, target_autonomy_days, drift)
+           climate_multiplier, target_autonomy_days, drift, drift_seed)
         VALUES (100, 80, 40, 0, 0, 0, 1.0, 5, 0.0, NULL)
     """)
 

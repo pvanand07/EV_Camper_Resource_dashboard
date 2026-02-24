@@ -21,822 +21,555 @@
       --success: #34d399;
       --warning: #fbbf24;
       --danger: #f87171;
-      --drift-high: rgba(251,191,36,0.12);
-      --drift-low:  rgba(99,210,255,0.10);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Outfit', sans-serif;
-      background: var(--bg-dark);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-    #app { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
-    header {
-      text-align: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
-    }
+    body { font-family: 'Outfit', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; line-height: 1.5; }
+    #app { max-width: 1040px; margin: 0 auto; padding: 1.5rem; }
+    header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
     h1 { font-size: 1.75rem; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
     .tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; }
-    .tab {
-      padding: 0.6rem 1.25rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      color: var(--text-muted);
-      transition: all 0.2s;
-    }
+    .tab { padding: 0.6rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500; color: var(--text-muted); transition: all 0.2s; }
     .tab:hover { color: var(--text); border-color: var(--accent-dim); }
     .tab.active { background: var(--accent-dim); color: var(--bg-dark); border-color: var(--accent); }
     .panel { display: none; }
     .panel.active { display: block; }
-    .section {
-      background: var(--bg-card);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1rem;
-      border: 1px solid var(--border);
-    }
-    .section h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--accent);
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    .section { background: var(--bg-card); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; border: 1px solid var(--border); }
+    .section h2 { font-size: 1rem; font-weight: 600; color: var(--accent); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .section h2 .badge { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-    }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
     .form-row { display: flex; flex-direction: column; gap: 0.35rem; }
     .form-row label { font-size: 0.85rem; color: var(--text-muted); }
-    .form-row input, .form-row select {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
-      padding: 0.5rem 0.65rem;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-    }
-    .form-row input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(34,211,238,0.2);
-    }
+    .form-row input { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; padding: 0.5rem 0.65rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); }
+    .form-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.2); }
     .form-row input[readonly] { opacity: 0.7; cursor: default; }
 
-    /* ── Drift control ─────────────────────────────────────── */
-    .drift-row {
-      grid-column: 1 / -1;          /* full width in the grid */
-      background: #0d1b26;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-    .drift-row .drift-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .drift-row .drift-label {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .drift-row .drift-desc {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 0.2rem;
-    }
-    .drift-value-badge {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--warning);
-      background: rgba(251,191,36,0.12);
-      border: 1px solid rgba(251,191,36,0.3);
-      border-radius: 6px;
-      padding: 0.2rem 0.6rem;
-      min-width: 52px;
-      text-align: center;
-    }
-    .drift-range-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+    /* Drift */
+    .drift-row { grid-column: 1/-1; background: #0d1b26; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .drift-row .drift-top { display: flex; align-items: center; justify-content: space-between; }
+    .drift-row .drift-label { font-size: 0.9rem; font-weight: 600; color: var(--accent); }
+    .drift-row .drift-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .drift-value-badge { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--warning); background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; padding: 0.2rem 0.6rem; min-width: 52px; text-align: center; }
+    .drift-range-row { display: flex; align-items: center; gap: 0.75rem; }
     .drift-range-row span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
-    input[type="range"] {
-      flex: 1;
-      -webkit-appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      outline: none;
-      cursor: pointer;
-      background: linear-gradient(
-        to right,
-        var(--accent) 0%,
-        var(--accent) calc(var(--drift-pct, 0) * 1%),
-        var(--border) calc(var(--drift-pct, 0) * 1%),
-        var(--border) 100%
-      );
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 2px solid var(--bg-dark);
-      box-shadow: 0 0 4px rgba(34,211,238,0.5);
-    }
-    .drift-band-label {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 0.1rem;
-    }
+    input[type="range"] { flex: 1; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; cursor: pointer; background: linear-gradient(to right, var(--accent) 0%, var(--accent) calc(var(--drift-pct,0)*1%), var(--border) calc(var(--drift-pct,0)*1%), var(--border) 100%); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-dark); box-shadow: 0 0 4px rgba(34,211,238,0.5); }
+    .drift-band-label { font-size: 0.78rem; color: var(--text-muted); }
     .drift-band-label span { color: var(--warning); font-family: 'JetBrains Mono', monospace; }
+    .seed-row { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid rgba(51,65,85,0.6); display: flex; flex-direction: column; gap: 0.4rem; }
+    .seed-label { font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .seed-hint { font-size: 0.74rem; color: #475569; }
+    .seed-input-wrap { display: flex; align-items: center; gap: 0.5rem; }
+    .seed-input { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; padding: 0.38rem 0.6rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); width: 120px; }
+    .seed-input:focus { outline: none; border-color: var(--accent); }
+    .seed-clear { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0.28rem 0.5rem; transition: all 0.15s; }
+    .seed-clear:hover { border-color: var(--danger); color: var(--danger); }
+    .seed-status { font-size: 0.78rem; color: var(--warning); font-family: 'JetBrains Mono', monospace; }
+    .seed-status.unlocked { color: var(--text-muted); }
 
-    /* ── Tables ────────────────────────────────────────────── */
+    /* Generic tables */
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
     th { color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
-    td input {
-      width: 100%;
-      max-width: 90px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      padding: 0.35rem 0.5rem;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text);
-    }
+    td input { width: 100%; max-width: 90px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.35rem 0.5rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
     td input:focus { outline: none; border-color: var(--accent); }
 
-    /* daily usage drift colouring */
-    td.drift-above { background: var(--drift-high); }
-    td.drift-below { background: var(--drift-low); }
-    td.factor-cell {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    td.factor-high { color: var(--warning); }
-    td.factor-low  { color: var(--accent); }
-    .drift-legend {
-      display: flex;
-      gap: 1rem;
-      margin-top: 0.75rem;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }
-    .drift-legend .swatch {
-      display: inline-block;
-      width: 12px; height: 12px;
-      border-radius: 3px;
-      margin-right: 4px;
-      vertical-align: middle;
-    }
-    .swatch-high { background: rgba(251,191,36,0.4); }
-    .swatch-low  { background: rgba(99,210,255,0.3); }
-
-    /* ── Misc ──────────────────────────────────────────────── */
-    .btn {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
+    /* Buttons */
+    .btn { font-family: 'Outfit', sans-serif; font-weight: 500; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; }
     .btn-primary { background: var(--accent); color: var(--bg-dark); }
     .btn-primary:hover { background: #67e8f9; }
     .btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
     .btn-secondary:hover { border-color: var(--accent-dim); }
-    .save-bar {
-      position: sticky;
-      bottom: 0;
-      background: var(--bg-dark);
-      padding: 1rem 0;
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
+    .save-bar { position: sticky; bottom: 0; background: var(--bg-dark); padding: 1rem 0; margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; }
     .save-bar .msg { font-size: 0.9rem; color: var(--success); }
     .save-bar .msg.err { color: var(--danger); }
+
+    /* Results misc */
     .results-table { font-family: 'JetBrains Mono', monospace; }
     .results-table td:not(:first-child) { text-align: right; }
-    .results-table td.num { text-align: right; }
     .table-scroll { overflow-x: auto; }
     .status-ok { color: var(--success); }
     .status-warn { color: var(--warning); }
     .status-bad { color: var(--danger); }
-    .stability-card {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .stability-item {
-      background: var(--bg-input);
-      padding: 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
+    .stability-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .stability-item { background: var(--bg-input); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); }
     .stability-item .label { font-size: 0.8rem; color: var(--text-muted); }
     .stability-item .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
-    .drift-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-size: 0.78rem;
-      padding: 0.2rem 0.55rem;
-      border-radius: 20px;
-      background: rgba(251,191,36,0.12);
-      border: 1px solid rgba(251,191,36,0.25);
-      color: var(--warning);
-      margin-left: 0.5rem;
-    }
-    /* ── Seed control ──────────────────────────────────────── */
-    .seed-row {
-      margin-top: 0.6rem;
-      padding-top: 0.6rem;
-      border-top: 1px solid rgba(51,65,85,0.6);
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .seed-label {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-    }
-    .seed-hint {
-      font-size: 0.74rem;
-      color: #475569;
-    }
-    .seed-input-wrap {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .seed-input {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.88rem;
-      padding: 0.38rem 0.6rem;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      width: 120px;
-    }
-    .seed-input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(34,211,238,0.15);
-    }
-    .seed-clear {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 0.75rem;
-      padding: 0.28rem 0.5rem;
-      transition: all 0.15s;
-    }
-    .seed-clear:hover { border-color: var(--danger); color: var(--danger); }
-    .seed-status {
-      font-size: 0.78rem;
-      color: var(--warning);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .seed-status.unlocked { color: var(--text-muted); }
+    .drift-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: var(--warning); margin-left: 0.5rem; }
+
+    /* ═══════════════════════════════════════════════════
+       HEATMAP
+    ═══════════════════════════════════════════════════ */
+    .stream-toggle { display: flex; gap: 0.3rem; margin-bottom: 1.1rem; }
+    .stream-btn { padding: 0.32rem 0.85rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: all 0.18s; font-family: 'Outfit', sans-serif; }
+    .stream-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+    .stream-btn.active-fresh { background: rgba(34,211,238,0.13); border-color: #22d3ee; color: #67e8f9; }
+    .stream-btn.active-grey  { background: rgba(148,163,184,0.13); border-color: #94a3b8; color: #cbd5e1; }
+    .stream-btn.active-black { background: rgba(248,113,113,0.12); border-color: #f87171; color: #fca5a5; }
+
+    .heatmap-wrap { overflow-x: auto; padding-bottom: 0.25rem; }
+    .heatmap { border-collapse: separate; border-spacing: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+
+    /* Sticky column header */
+    .heatmap th { padding: 0.4rem 0.5rem; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-align: center; white-space: nowrap; background: var(--bg-card); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 2; }
+    .heatmap th.th-act { text-align: left; min-width: 155px; position: sticky; left: 0; z-index: 3; }
+
+    /* Sticky label column */
+    .heatmap td.act-label { position: sticky; left: 0; background: var(--bg-card); z-index: 1; padding: 0 0.65rem; white-space: nowrap; font-size: 0.82rem; color: var(--text); min-width: 155px; border-radius: 4px 0 0 4px; }
+    .heatmap td.act-label .act-name { display: block; padding: 0.3rem 0; }
+
+    /* Group header */
+    .heatmap tr.grp-hdr td { background: #101d2b; padding: 0.28rem 0.65rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; border-top: 2px solid #1e3347; }
+    .heatmap tr.grp-hdr td.act-label { background: #101d2b; }
+
+    /* Subtotal rows */
+    .heatmap tr.grp-sub td { background: rgba(10,15,20,0.55); }
+    .heatmap tr.grp-sub td.act-label { background: rgba(10,15,20,0.55); color: var(--text-muted); font-style: italic; }
+    .heatmap tr.grand td { background: #0d1117; }
+    .heatmap tr.grand td.act-label { background: #0d1117; color: var(--text); font-weight: 700; }
+
+    /* Heat cells */
+    td.heat-td { padding: 1px; text-align: center; vertical-align: middle; }
+    .heat-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 56px; height: 44px; border-radius: 5px; cursor: default; transition: filter 0.14s, transform 0.14s; }
+    .heat-cell:hover { filter: brightness(1.25); transform: scale(1.06); z-index: 10; position: relative; }
+    .heat-cell .cv  { font-size: 0.76rem; font-weight: 700; line-height: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    .heat-cell .cf  { font-size: 0.59rem; opacity: 0.8; line-height: 1; margin-top: 2px; }
+    .sub-cell { display: flex; align-items: center; justify-content: center; min-width: 56px; height: 32px; border-radius: 4px; font-size: 0.73rem; font-weight: 600; background: rgba(30,45,60,0.7); color: var(--text-muted); }
+    .grand-cell { background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.18); color: var(--accent); font-weight: 700; }
+
+    /* Scale bar */
+    .heatmap-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+    .scale-bar { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
+    .scale-gradient { width: 130px; height: 10px; border-radius: 5px; display: block; }
+    .drift-note { font-size: 0.74rem; color: #475569; }
   </style>
 </head>
 <body>
-  <div id="app">
-    <header>
-      <h1>💧 Water Intelligence Engine v2</h1>
-      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">Unified architecture — edit inputs, view computed results</p>
-    </header>
+<div id="app">
+  <header>
+    <h1>💧 Water Intelligence Engine v2</h1>
+    <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.25rem;">Unified architecture — edit inputs, view computed results</p>
+  </header>
 
-    <div class="tabs">
-      <button class="tab" :class="{ active: tab === 'input' }" @click="tab = 'input'">Input</button>
-      <button class="tab" :class="{ active: tab === 'results' }" @click="tab = 'results'; refreshResults()">Results</button>
+  <div class="tabs">
+    <button class="tab" :class="{ active: tab==='input' }"   @click="tab='input'">Input</button>
+    <button class="tab" :class="{ active: tab==='results' }" @click="tab='results'; refreshResults()">Results</button>
+  </div>
+
+  <!-- ═══ INPUT TAB ════════════════════════════════════════ -->
+  <div class="panel" :class="{ active: tab==='input' }">
+
+    <div class="section" v-if="inputs">
+      <h2>📋 Section 1 — People Inputs <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
+      <div class="form-grid">
+        <div class="form-row" v-for="u in inputs.user_types" :key="u.name+u.is_child">
+          <label>{{ u.name }}<span v-if="u.is_child"> (children)</span></label>
+          <input type="number" min="0" step="1" v-model.number="u.count" :readonly="u.name==='Adults Total'" />
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Adults Total = {{ adultsTotal }} (auto-sum)</p>
     </div>
 
-    <!-- ═══════════════ INPUT TAB ═══════════════ -->
-    <div class="panel" :class="{ active: tab === 'input' }">
-
-      <!-- Section 1 — People -->
-      <div class="section" v-if="inputs">
-        <h2>📋 Section 1 — People Inputs <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
-        <div class="form-grid">
-          <div class="form-row" v-for="u in inputs.user_types" :key="u.name + u.is_child">
-            <label>{{ u.name }} <span v-if="u.is_child">(children)</span></label>
-            <input type="number" min="0" step="1" v-model.number="u.count" :readonly="u.name === 'Adults Total'" />
-          </div>
-        </div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.75rem;">
-          Adults Total = {{ adultsTotal }} (auto-sum)
-        </p>
-      </div>
-
-      <!-- Section 2 — Tank & Environment -->
-      <div class="section" v-if="inputs?.tank_environment">
-        <h2>🛢️ Section 2 — Tank & Environment</h2>
-        <div class="form-grid">
-          <div class="form-row">
-            <label>Fresh Tank Capacity (gal)</label>
-            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" />
-          </div>
-          <div class="form-row">
-            <label>Grey Tank Capacity (gal)</label>
-            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" />
-          </div>
-          <div class="form-row">
-            <label>Black Tank Capacity (gal)</label>
-            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" />
-          </div>
-          <div class="form-row">
-            <label>Current Fresh Level (gal)</label>
-            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" />
-          </div>
-          <div class="form-row">
-            <label>Current Grey Level (gal)</label>
-            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" />
-          </div>
-          <div class="form-row">
-            <label>Current Black Level (gal)</label>
-            <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
-          </div>
-          <div class="form-row">
-            <label>Climate Multiplier (×)</label>
-            <input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" />
-          </div>
-          <div class="form-row">
-            <label>Target Autonomy Days</label>
-            <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
-          </div>
-
-          <!-- ── Drift control — full width ── -->
-          <div class="drift-row">
-            <div class="drift-top">
-              <div>
-                <div class="drift-label">🎲 Behavioral Drift</div>
-                <div class="drift-desc">
-                  Models day-to-day unpredictability per activity using a normal distribution
-                  centred at 1.0 with σ = drift ÷ 2, clipped to [1−drift, 1+drift].
-                </div>
-              </div>
-              <div class="drift-value-badge">{{ driftPct }}</div>
+    <div class="section" v-if="inputs?.tank_environment">
+      <h2>🛢️ Section 2 — Tank & Environment</h2>
+      <div class="form-grid">
+        <div class="form-row"><label>Fresh Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" /></div>
+        <div class="form-row"><label>Grey Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" /></div>
+        <div class="form-row"><label>Black Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" /></div>
+        <div class="form-row"><label>Current Fresh Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" /></div>
+        <div class="form-row"><label>Current Grey Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" /></div>
+        <div class="form-row"><label>Current Black Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" /></div>
+        <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
+        <div class="form-row"><label>Target Autonomy Days</label><input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" /></div>
+        <div class="drift-row">
+          <div class="drift-top">
+            <div>
+              <div class="drift-label">🎲 Behavioral Drift</div>
+              <div class="drift-desc">Models day-to-day unpredictability via N(1.0, σ=drift/2) clipped to [1−drift, 1+drift].</div>
             </div>
-            <div class="drift-range-row">
-              <span>0 — none</span>
-              <input
-                type="range" min="0" max="1" step="0.01"
-                v-model.number="inputs.tank_environment.drift"
-                :style="{ '--drift-pct': inputs.tank_environment.drift * 100 }"
-              />
-              <span>1 — max</span>
-            </div>
-            <div class="drift-band-label" v-if="inputs.tank_environment.drift > 0">
-              Each activity day-value drawn from
-              <span>N(1.0, {{ driftSd }})</span>
-              clipped to
-              <span>[{{ driftLo }}, {{ driftHi }}]</span>
-            </div>
-            <div class="drift-band-label" v-else style="color:#475569;">
-              Drift = 0 — all days use exact baseline values (deterministic)
-            </div>
-
-            <!-- Seed control -->
-            <div class="seed-row" v-if="inputs.tank_environment.drift > 0">
-              <label class="seed-label">
-                🔒 Random Seed
-                <span class="seed-hint">integer = locked & reproducible &nbsp;|&nbsp; blank = fresh random each run</span>
-              </label>
-              <div class="seed-input-wrap">
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  class="seed-input"
-                  :value="inputs.tank_environment.drift_seed ?? ''"
-                  @input="onSeedInput($event)"
-                  placeholder="e.g. 42"
-                />
-                <button
-                  class="seed-clear"
-                  title="Clear seed (random each run)"
-                  v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined"
-                  @click="inputs.tank_environment.drift_seed = null"
-                >✕</button>
-                <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">
-                  🔒 locked
-                </span>
-                <span class="seed-status unlocked" v-else>
-                  🎲 random
-                </span>
-              </div>
+            <div class="drift-value-badge">{{ driftPct }}</div>
+          </div>
+          <div class="drift-range-row">
+            <span>0 — none</span>
+            <input type="range" min="0" max="1" step="0.01" v-model.number="inputs.tank_environment.drift" :style="{'--drift-pct': inputs.tank_environment.drift*100}" />
+            <span>1 — max</span>
+          </div>
+          <div class="drift-band-label" v-if="inputs.tank_environment.drift > 0">
+            Draw from <span>N(1.0, {{ driftSd }})</span> clipped to <span>[{{ driftLo }}, {{ driftHi }}]</span>
+          </div>
+          <div class="drift-band-label" v-else style="color:#475569;">Drift = 0 — all days use exact baseline (deterministic)</div>
+          <div class="seed-row" v-if="inputs.tank_environment.drift > 0">
+            <label class="seed-label">🔒 Random Seed <span class="seed-hint">integer = locked &amp; reproducible &nbsp;|&nbsp; blank = fresh random each run</span></label>
+            <div class="seed-input-wrap">
+              <input type="number" step="1" min="0" class="seed-input" :value="inputs.tank_environment.drift_seed ?? ''" @input="onSeedInput($event)" placeholder="e.g. 42" />
+              <button class="seed-clear" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined" @click="inputs.tank_environment.drift_seed = null">✕</button>
+              <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">🔒 locked</span>
+              <span class="seed-status unlocked" v-else>🎲 random</span>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Section 3 — Behavior Multipliers -->
-      <div class="section" v-if="inputs?.behavior_multipliers">
-        <h2>🧠 Section 3 — Behavior Multipliers</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>User Type</th>
-              <th>Count</th>
-              <th>Shower Mult</th>
-              <th>Sink Mult</th>
-              <th>Toilet Mult</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="b in inputs.behavior_multipliers" :key="b.user_type">
-              <td>{{ b.user_type }}</td>
-              <td>{{ userCount(b.user_type) }}</td>
-              <td><input type="number" min="0" step="0.1" v-model.number="b.shower_mult" /></td>
-              <td><input type="number" min="0" step="0.1" v-model.number="b.sink_mult" /></td>
-              <td><input type="number" min="0" step="0.1" v-model.number="b.toilet_mult" /></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Section 4 — Activity Engine -->
-      <div class="section" v-if="inputs?.activities">
-        <h2>⚡ Section 4 — Activity Engine</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th>Flow (gal/min)</th>
-              <th>Duration (min)</th>
-              <th>Events/Day</th>
-              <th>Gal/Unit</th>
-              <th>Grey %</th>
-              <th>Black %</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="a in inputs.activities" :key="a.id">
-              <td>{{ a.name }}</td>
-              <td><input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="—" /></td>
-              <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" /></td>
-              <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" /></td>
-              <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" /></td>
-              <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.grey_pct" /></td>
-              <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.black_pct" /></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="save-bar">
-        <button class="btn btn-primary" @click="saveInputs" :disabled="saving">Save & Compute</button>
-        <span class="msg" :class="{ err: saveError }" v-if="saveMsg">{{ saveMsg }}</span>
       </div>
     </div>
 
-    <!-- ═══════════════ RESULTS TAB ═══════════════ -->
-    <div class="panel" :class="{ active: tab === 'results' }">
+    <div class="section" v-if="inputs?.behavior_multipliers">
+      <h2>🧠 Section 3 — Behavior Multipliers</h2>
+      <table>
+        <thead><tr><th>User Type</th><th>Count</th><th>Shower Mult</th><th>Sink Mult</th><th>Toilet Mult</th></tr></thead>
+        <tbody>
+          <tr v-for="b in inputs.behavior_multipliers" :key="b.user_type">
+            <td>{{ b.user_type }}</td><td>{{ userCount(b.user_type) }}</td>
+            <td><input type="number" min="0" step="0.1" v-model.number="b.shower_mult" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="b.sink_mult" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="b.toilet_mult" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <!-- Effective multipliers -->
-      <div class="section" v-if="results">
-        <h2>🧠 Effective Multipliers (SUMPRODUCT)</h2>
-        <div class="form-grid">
-          <div class="form-row">
-            <label>Shower</label>
-            <input type="text" :value="results.effective_multipliers?.shower?.toFixed(2)" readonly />
-          </div>
-          <div class="form-row">
-            <label>Sink</label>
-            <input type="text" :value="results.effective_multipliers?.sink?.toFixed(2)" readonly />
-          </div>
-          <div class="form-row">
-            <label>Toilet</label>
-            <input type="text" :value="results.effective_multipliers?.toilet?.toFixed(2)" readonly />
-          </div>
-        </div>
-      </div>
+    <div class="section" v-if="inputs?.activities">
+      <h2>⚡ Section 4 — Activity Engine</h2>
+      <table>
+        <thead><tr><th>Activity</th><th>Flow (gal/min)</th><th>Duration (min)</th><th>Events/Day</th><th>Gal/Unit</th><th>Grey %</th><th>Black %</th></tr></thead>
+        <tbody>
+          <tr v-for="a in inputs.activities" :key="a.id">
+            <td>{{ a.name }}</td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" /></td>
+            <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.grey_pct" /></td>
+            <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.black_pct" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <!-- Daily usage by day -->
-      <div class="section" v-if="results?.daily_usage_by_day?.length">
-        <h2>
-          📅 Daily Usage by Target Day
-          <span class="drift-chip" v-if="results.drift > 0">
-            🎲 drift {{ results.drift?.toFixed(2) }}
-            <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">
-              &nbsp;🔒 seed {{ results.drift_seed }}
-            </template>
-            <template v-else>
-              &nbsp;🎲 random
-            </template>
-          </span>
-        </h2>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-          Usage across {{ results.target_days || 0 }} days (gal/day per activity).
-          <template v-if="results.drift > 0">
-            Each cell scaled by a draw from N(1.0, {{ (results.drift / 2).toFixed(2) }}).
-            Factor shown in small text — <span style="color:var(--warning);">warm = above baseline</span>,
-            <span style="color:var(--accent);">cool = below baseline</span>.
-          </template>
-        </p>
-        <div class="table-scroll">
-          <table class="results-table">
-            <thead>
-              <tr>
-                <th>Activity</th>
-                <th v-for="d in dayColumns" :key="d.key">{{ d.label }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in results.daily_usage_by_day" :key="row.activity">
-                <td>{{ row.activity }}</td>
-                <td
-                  v-for="d in dayColumns"
-                  :key="d.key"
-                  class="num"
-                  :class="driftClass(row, d)"
-                >
-                  {{ row[d.key]?.toFixed(2) ?? '—' }}
-                  <div
-                    v-if="d.isFresh && results.drift > 0 && row[d.factorKey] !== undefined"
-                    class="factor-cell"
-                    :class="row[d.factorKey] > 1 ? 'factor-high' : 'factor-low'"
-                    style="font-size:0.68rem; line-height:1; margin-top:2px;"
-                  >×{{ row[d.factorKey]?.toFixed(3) }}</div>
-                </td>
-              </tr>
-              <tr style="font-weight:600; border-top:2px solid var(--border);">
-                <td>TOTAL</td>
-                <td v-for="d in dayColumns" :key="'tot-' + d.key" class="num">{{ dayTotal(d.key) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="drift-legend" v-if="results.drift > 0">
-          <span><span class="swatch swatch-high"></span>Above baseline</span>
-          <span><span class="swatch swatch-low"></span>Below baseline</span>
-        </div>
-      </div>
-
-      <!-- Activity results -->
-      <div class="section" v-if="results?.activity_results?.length">
-        <h2>⚡ Activity Engine — Daily Baseline</h2>
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th>Fresh/day</th>
-              <th>Grey/day</th>
-              <th>Black/day</th>
-              <th>Attrib %</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in results.activity_results" :key="r.activity_name">
-              <td>{{ r.activity_name }}</td>
-              <td>{{ r.daily_fresh_gal?.toFixed(2) }}</td>
-              <td>{{ r.grey_added_gal?.toFixed(2) }}</td>
-              <td>{{ r.black_added_gal?.toFixed(2) }}</td>
-              <td>{{ r.fresh_attrib_pct?.toFixed(1) }}%</td>
-            </tr>
-            <tr style="font-weight:600; border-top:2px solid var(--border);">
-              <td>TOTAL</td>
-              <td>{{ totalFresh?.toFixed(2) }}</td>
-              <td>{{ totalGrey?.toFixed(2) }}</td>
-              <td>{{ totalBlack?.toFixed(2) }}</td>
-              <td>100%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Tank Projections -->
-      <div class="section" v-if="results?.tank_projections?.length">
-        <h2>🔋 Tank Projections <span class="badge">based on deterministic baseline</span></h2>
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Tank</th>
-              <th>Capacity</th>
-              <th>Current</th>
-              <th>Daily Δ</th>
-              <th>Days Left</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="t in results.tank_projections" :key="t.tank">
-              <td>{{ t.tank }}</td>
-              <td>{{ t.capacity_gal?.toFixed(1) }}</td>
-              <td>{{ t.current_gal?.toFixed(1) }}</td>
-              <td>{{ t.daily_delta_gal > 0 ? '+' : '' }}{{ t.daily_delta_gal?.toFixed(2) }}</td>
-              <td>{{ t.days_remaining >= 9999 ? '∞' : t.days_remaining?.toFixed(2) }}</td>
-              <td :class="statusClass(t.status)">{{ t.status }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Stability Score -->
-      <div class="section" v-if="results?.stability_score">
-        <h2>🎯 Stability Score</h2>
-        <div class="stability-card">
-          <div class="stability-item">
-            <div class="label">Limiting Tank</div>
-            <div class="value">{{ results.stability_score.limiting_tank }}</div>
-          </div>
-          <div class="stability-item">
-            <div class="label">Limiting Days</div>
-            <div class="value">{{ results.stability_score.limiting_days?.toFixed(2) }} days</div>
-          </div>
-          <div class="stability-item">
-            <div class="label">Target Days</div>
-            <div class="value">{{ results.stability_score.target_days }}</div>
-          </div>
-          <div class="stability-item">
-            <div class="label">Score</div>
-            <div class="value">{{ results.stability_score.score_pct?.toFixed(1) }} / 100</div>
-          </div>
-          <div class="stability-item">
-            <div class="label">Rating</div>
-            <div class="value" :class="statusClass(results.stability_score.rating)">{{ results.stability_score.rating }}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="save-bar">
-        <button class="btn btn-secondary" @click="refreshResults">Refresh Results</button>
-      </div>
+    <div class="save-bar">
+      <button class="btn btn-primary" @click="saveInputs" :disabled="saving">Save & Compute</button>
+      <span class="msg" :class="{ err: saveError }" v-if="saveMsg">{{ saveMsg }}</span>
     </div>
   </div>
 
-  <script>
-    const { createApp } = Vue;
-    const API = '/api';
+  <!-- ═══ RESULTS TAB ════════════════════════════════════════ -->
+  <div class="panel" :class="{ active: tab==='results' }">
 
-    createApp({
-      data() {
-        return {
-          tab: 'input',
-          inputs: null,
-          results: null,
-          saving: false,
-          saveMsg: '',
-          saveError: false,
-        };
-      },
-      computed: {
-        adultsTotal() {
-          if (!this.inputs?.user_types) return 0;
-          return this.inputs.user_types.filter(u => !u.is_child).reduce((s, u) => s + (u.count || 0), 0);
-        },
-        totalFresh() {
-          return this.results?.activity_results?.reduce((s, r) => s + (r.daily_fresh_gal || 0), 0) ?? 0;
-        },
-        totalGrey() {
-          return this.results?.activity_results?.reduce((s, r) => s + (r.grey_added_gal || 0), 0) ?? 0;
-        },
-        totalBlack() {
-          return this.results?.activity_results?.reduce((s, r) => s + (r.black_added_gal || 0), 0) ?? 0;
-        },
-        dayColumns() {
-          const days = this.results?.target_days || 5;
-          const cols = [];
-          for (let d = 1; d <= days; d++) {
-            cols.push({ key: `fresh_${d}`, factorKey: `factor_${d}`, label: `fresh_${d}`, isFresh: true });
-            cols.push({ key: `grey_${d}`,  factorKey: `factor_${d}`, label: `grey_${d}`,  isFresh: false });
-            cols.push({ key: `back_${d}`,  factorKey: `factor_${d}`, label: `back_${d}`,  isFresh: false });
-          }
-          return cols;
-        },
-        // Drift display helpers
-        driftPct() {
-          const d = this.inputs?.tank_environment?.drift ?? 0;
-          return (d * 100).toFixed(0) + '%';
-        },
-        driftSd() {
-          const d = this.inputs?.tank_environment?.drift ?? 0;
-          return (d / 2).toFixed(2);
-        },
-        driftLo() {
-          const d = this.inputs?.tank_environment?.drift ?? 0;
-          return (1 - d).toFixed(2);
-        },
-        driftHi() {
-          const d = this.inputs?.tank_environment?.drift ?? 0;
-          return (1 + d).toFixed(2);
-        },
-      },
-      mounted() {
-        this.loadInputs();
-        this.refreshResults();
-      },
-      methods: {
-        async loadInputs() {
-          try {
-            const r = await fetch(API + '/inputs');
-            this.inputs = await r.json();
-          } catch (e) {
-            this.saveMsg = 'Failed to load inputs: ' + e.message;
-            this.saveError = true;
-          }
-        },
-        async refreshResults() {
-          try {
-            const r = await fetch(API + '/results');
-            this.results = await r.json();
-          } catch (e) {
-            this.saveMsg = 'Failed to load results: ' + e.message;
-            this.saveError = true;
-          }
-        },
-        userCount(userType) {
-          const u = this.inputs?.user_types?.find(x => x.name === userType && !x.is_child);
-          return u ? u.count : 0;
-        },
-        async saveInputs() {
-          this.saving = true;
-          this.saveMsg = '';
-          this.saveError = false;
-          try {
-            const payload = {
-              user_types: this.inputs.user_types,
-              tank_environment: this.inputs.tank_environment,
-              behavior_multipliers: this.inputs.behavior_multipliers,
-              activities: this.inputs.activities,
-            };
-            const r = await fetch(API + '/inputs', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-            if (!r.ok) throw new Error(await r.text());
-            this.saveMsg = 'Saved. Results updated.';
-            await this.refreshResults();
-          } catch (e) {
-            this.saveMsg = 'Save failed: ' + e.message;
-            this.saveError = true;
-          } finally {
-            this.saving = false;
-          }
-        },
-        onSeedInput(e) {
-          const val = e.target.value.trim();
-          this.inputs.tank_environment.drift_seed = val === '' ? null : parseInt(val, 10);
-        },
-        dayTotal(key) {
-          if (!this.results?.daily_usage_by_day?.length) return '—';
-          return this.results.daily_usage_by_day.reduce((s, r) => s + (r[key] || 0), 0).toFixed(2);
-        },
-        statusClass(s) {
-          if (!s) return '';
-          if (s.includes('On Track') || s.includes('Full Autonomy')) return 'status-ok';
-          if (s.includes('Low') || s.includes('Full') || s.includes('Good') || s.includes('Marginal')) return 'status-warn';
-          return 'status-bad';
-        },
-        // Colour daily-usage cells based on drift factor
-        driftClass(row, col) {
-          if (!this.results?.drift) return '';
-          const factor = row[col.factorKey];
-          if (factor === undefined) return '';
-          if (factor > 1.02)  return 'drift-above';
-          if (factor < 0.98)  return 'drift-below';
-          return '';
-        },
-      },
-    }).mount('#app');
-  </script>
+    <!-- Effective multipliers -->
+    <div class="section" v-if="results">
+      <h2>🧠 Effective Multipliers (SUMPRODUCT)</h2>
+      <div class="form-grid">
+        <div class="form-row"><label>Shower</label><input type="text" :value="results.effective_multipliers?.shower?.toFixed(2)" readonly /></div>
+        <div class="form-row"><label>Sink</label><input type="text" :value="results.effective_multipliers?.sink?.toFixed(2)" readonly /></div>
+        <div class="form-row"><label>Toilet</label><input type="text" :value="results.effective_multipliers?.toilet?.toFixed(2)" readonly /></div>
+      </div>
+    </div>
+
+    <!-- ── HEATMAP ──────────────────────────────────────────── -->
+    <div class="section" v-if="results?.daily_usage_by_day?.length">
+      <h2>
+        📅 Daily Usage Heatmap
+        <span class="drift-chip" v-if="results.drift > 0">
+          🎲 drift {{ results.drift?.toFixed(2) }}
+          <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">&nbsp;🔒 seed {{ results.drift_seed }}</template>
+          <template v-else>&nbsp;🎲 random</template>
+        </span>
+      </h2>
+
+      <div class="stream-toggle">
+        <button class="stream-btn" :class="{'active-fresh': heatStream==='fresh'}" @click="heatStream='fresh'">💧 Fresh</button>
+        <button class="stream-btn" :class="{'active-grey':  heatStream==='grey'}"  @click="heatStream='grey'">🪣 Grey</button>
+        <button class="stream-btn" :class="{'active-black': heatStream==='black'}" @click="heatStream='black'">🚽 Black</button>
+      </div>
+
+      <div class="heatmap-wrap">
+        <table class="heatmap">
+          <thead>
+            <tr>
+              <th class="th-act">Activity</th>
+              <th v-for="d in heatDayNums" :key="d">Day {{ d }}</th>
+              <th>Σ Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="group in heatGroups" :key="group.name">
+              <!-- Group header -->
+              <tr class="grp-hdr">
+                <td class="act-label" :colspan="heatDayNums.length + 2">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
+              </tr>
+              <!-- Activity rows -->
+              <tr v-for="row in group.rows" :key="row.activity">
+                <td class="act-label"><span class="act-name">{{ row.activity }}</span></td>
+                <td class="heat-td" v-for="d in heatDayNums" :key="d">
+                  <div class="heat-cell" :style="cellStyle(row, d)" :title="cellTitle(row, d)">
+                    <span class="cv">{{ cellVal(row, d) }}</span>
+                    <span class="cf" v-if="results.drift > 0 && row[`factor_${d}`] !== undefined">×{{ row[`factor_${d}`]?.toFixed(2) }}</span>
+                  </div>
+                </td>
+                <td class="heat-td">
+                  <div class="sub-cell">{{ rowTotal(row) }}</div>
+                </td>
+              </tr>
+              <!-- Group subtotal -->
+              <tr class="grp-sub">
+                <td class="act-label"><span class="act-name">Σ {{ group.name }}</span></td>
+                <td class="heat-td" v-for="d in heatDayNums" :key="d">
+                  <div class="sub-cell">{{ groupDayTotal(group, d) }}</div>
+                </td>
+                <td class="heat-td">
+                  <div class="sub-cell" style="color:var(--text);font-weight:700;">{{ groupTotal(group) }}</div>
+                </td>
+              </tr>
+            </template>
+            <!-- Grand total -->
+            <tr class="grand">
+              <td class="act-label"><span class="act-name">ALL ACTIVITIES</span></td>
+              <td class="heat-td" v-for="d in heatDayNums" :key="d">
+                <div class="sub-cell grand-cell">{{ grandDayTotal(d) }}</div>
+              </td>
+              <td class="heat-td">
+                <div class="sub-cell grand-cell" style="font-size:0.8rem;">{{ grandTotal }}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="heatmap-footer">
+        <div class="scale-bar">
+          <span>Low</span>
+          <canvas class="scale-gradient" id="scaleCanvas" width="130" height="10"></canvas>
+          <span>High</span>
+          <span style="margin-left:0.4rem;font-size:0.7rem;">(gal/day, normalised per stream)</span>
+        </div>
+        <div class="drift-note" v-if="results.drift > 0">
+          ×factor below value = drift draw &nbsp;·&nbsp; amber border = above baseline, cyan = below
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity baseline -->
+    <div class="section" v-if="results?.activity_results?.length">
+      <h2>⚡ Activity Engine — Daily Baseline</h2>
+      <table class="results-table">
+        <thead><tr><th>Activity</th><th>Fresh/day</th><th>Grey/day</th><th>Black/day</th><th>Attrib %</th></tr></thead>
+        <tbody>
+          <tr v-for="r in results.activity_results" :key="r.activity_name">
+            <td>{{ r.activity_name }}</td>
+            <td>{{ r.daily_fresh_gal?.toFixed(2) }}</td>
+            <td>{{ r.grey_added_gal?.toFixed(2) }}</td>
+            <td>{{ r.black_added_gal?.toFixed(2) }}</td>
+            <td>{{ r.fresh_attrib_pct?.toFixed(1) }}%</td>
+          </tr>
+          <tr style="font-weight:600;border-top:2px solid var(--border);">
+            <td>TOTAL</td>
+            <td>{{ totalFresh?.toFixed(2) }}</td>
+            <td>{{ totalGrey?.toFixed(2) }}</td>
+            <td>{{ totalBlack?.toFixed(2) }}</td>
+            <td>100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tank projections -->
+    <div class="section" v-if="results?.tank_projections?.length">
+      <h2>🔋 Tank Projections <span class="badge">based on deterministic baseline</span></h2>
+      <table class="results-table">
+        <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Days Left</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr v-for="t in results.tank_projections" :key="t.tank">
+            <td>{{ t.tank }}</td>
+            <td>{{ t.capacity_gal?.toFixed(1) }}</td>
+            <td>{{ t.current_gal?.toFixed(1) }}</td>
+            <td>{{ t.daily_delta_gal > 0 ? '+' : '' }}{{ t.daily_delta_gal?.toFixed(2) }}</td>
+            <td>{{ t.days_remaining >= 9999 ? '∞' : t.days_remaining?.toFixed(2) }}</td>
+            <td :class="statusClass(t.status)">{{ t.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Stability score -->
+    <div class="section" v-if="results?.stability_score">
+      <h2>🎯 Stability Score</h2>
+      <div class="stability-card">
+        <div class="stability-item"><div class="label">Limiting Tank</div><div class="value">{{ results.stability_score.limiting_tank }}</div></div>
+        <div class="stability-item"><div class="label">Limiting Days</div><div class="value">{{ results.stability_score.limiting_days?.toFixed(2) }} days</div></div>
+        <div class="stability-item"><div class="label">Target Days</div><div class="value">{{ results.stability_score.target_days }}</div></div>
+        <div class="stability-item"><div class="label">Score</div><div class="value">{{ results.stability_score.score_pct?.toFixed(1) }} / 100</div></div>
+        <div class="stability-item"><div class="label">Rating</div><div class="value" :class="statusClass(results.stability_score.rating)">{{ results.stability_score.rating }}</div></div>
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn btn-secondary" @click="refreshResults">Refresh Results</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, nextTick } = Vue;
+const API = '/api';
+
+// ── Activity groupings ────────────────────────────────────
+const GROUPS = [
+  { name: 'Hygiene',    icon: '🚿', members: ['Shower', 'Bathroom Sink'] },
+  { name: 'Kitchen',    icon: '🍳', members: ['Kitchen Sink'] },
+  { name: 'Sanitation', icon: '🚽', members: ['Toilet'] },
+  { name: 'Drinking',   icon: '💧', members: ['Drinking (Adults)', 'Drinking (Children)'] },
+];
+
+// ── 5-stop colour ramps per stream ───────────────────────
+const RAMPS = {
+  fresh: ['#071a1f','#0c3d4d','#0891b2','#22d3ee','#a5f3fc'],
+  grey:  ['#0d1117','#1e293b','#334155','#64748b','#cbd5e1'],
+  black: ['#0d0508','#3b0a0a','#991b1b','#ef4444','#fca5a5'],
+};
+
+function rampColor(stream, t) {
+  const s = RAMPS[stream];
+  const raw = t * (s.length - 1);
+  const lo  = Math.floor(raw), hi = Math.min(lo + 1, s.length - 1);
+  const f   = raw - lo;
+  const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  const [r1,g1,b1] = hex(s[lo]), [r2,g2,b2] = hex(s[hi]);
+  return `rgb(${Math.round(r1+(r2-r1)*f)},${Math.round(g1+(g2-g1)*f)},${Math.round(b1+(b2-b1)*f)})`;
+}
+
+createApp({
+  data() {
+    return { tab:'input', inputs:null, results:null, saving:false, saveMsg:'', saveError:false, heatStream:'fresh' };
+  },
+  computed: {
+    adultsTotal() {
+      return this.inputs?.user_types?.filter(u=>!u.is_child).reduce((s,u)=>s+(u.count||0),0) ?? 0;
+    },
+    totalFresh() { return this.results?.activity_results?.reduce((s,r)=>s+(r.daily_fresh_gal||0),0) ?? 0; },
+    totalGrey()  { return this.results?.activity_results?.reduce((s,r)=>s+(r.grey_added_gal||0),0)  ?? 0; },
+    totalBlack() { return this.results?.activity_results?.reduce((s,r)=>s+(r.black_added_gal||0),0) ?? 0; },
+    driftPct() { return ((this.inputs?.tank_environment?.drift??0)*100).toFixed(0)+'%'; },
+    driftSd()  { return ((this.inputs?.tank_environment?.drift??0)/2).toFixed(2); },
+    driftLo()  { return (1-(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
+    driftHi()  { return (1+(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
+    heatDayNums() { return Array.from({length: this.results?.target_days||0},(_,i)=>i+1); },
+    streamKey()   { return this.heatStream==='black'?'back':this.heatStream; },
+
+    // Global min/max across all activities × days for current stream
+    heatRange() {
+      const rows = this.results?.daily_usage_by_day;
+      if (!rows?.length) return {min:0, max:1};
+      const k = this.streamKey, days = this.heatDayNums;
+      let min=Infinity, max=-Infinity;
+      for (const row of rows) for (const d of days) {
+        const v = row[`${k}_${d}`]??0;
+        if (v<min) min=v; if (v>max) max=v;
+      }
+      return {min, max: max>min ? max : min+0.001};
+    },
+
+    heatGroups() {
+      const rows = this.results?.daily_usage_by_day;
+      if (!rows?.length) return [];
+      const byName = Object.fromEntries(rows.map(r=>[r.activity,r]));
+      return GROUPS.map(g=>({...g, rows:g.members.map(m=>byName[m]).filter(Boolean)})).filter(g=>g.rows.length);
+    },
+
+    grandTotal() {
+      if (!this.results?.daily_usage_by_day?.length) return '—';
+      const k=this.streamKey, days=this.heatDayNums;
+      return this.results.daily_usage_by_day.reduce((s,row)=>s+days.reduce((ss,d)=>ss+(row[`${k}_${d}`]||0),0),0).toFixed(2);
+    },
+  },
+
+  watch: {
+    heatStream() { nextTick(()=>this.drawScale()); },
+    results()    { nextTick(()=>this.drawScale()); },
+  },
+
+  mounted() { this.loadInputs(); this.refreshResults(); },
+
+  methods: {
+    async loadInputs() {
+      try { this.inputs = await (await fetch(API+'/inputs')).json(); }
+      catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
+    },
+    async refreshResults() {
+      try { this.results = await (await fetch(API+'/results')).json(); }
+      catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
+    },
+    userCount(ut) { return this.inputs?.user_types?.find(x=>x.name===ut&&!x.is_child)?.count??0; },
+    async saveInputs() {
+      this.saving=true; this.saveMsg=''; this.saveError=false;
+      try {
+        const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
+        if (!r.ok) throw new Error(await r.text());
+        this.saveMsg='Saved. Results updated.';
+        await this.refreshResults();
+      } catch(e) { this.saveMsg='Save failed: '+e.message; this.saveError=true; }
+      finally { this.saving=false; }
+    },
+    onSeedInput(e) {
+      const v=e.target.value.trim();
+      this.inputs.tank_environment.drift_seed = v===''?null:parseInt(v,10);
+    },
+    statusClass(s) {
+      if (!s) return '';
+      if (s.includes('On Track')||s.includes('Full Autonomy')) return 'status-ok';
+      if (s.includes('Low')||s.includes('Full')||s.includes('Good')||s.includes('Marginal')) return 'status-warn';
+      return 'status-bad';
+    },
+
+    // ── Heatmap ─────────────────────────────────────────────
+    norm(row, d) {
+      const v=row[`${this.streamKey}_${d}`]??0, {min,max}=this.heatRange;
+      return Math.max(0,Math.min(1,(v-min)/(max-min)));
+    },
+    cellStyle(row, d) {
+      const t  = this.norm(row, d);
+      const bg = rampColor(this.heatStream, t);
+      // text: white for high intensity, muted for low
+      const col = t > 0.42 ? '#f1f5f9' : '#64748b';
+      // drift border
+      const factor = row[`factor_${d}`];
+      let border = '1px solid transparent';
+      if (factor != null && this.results?.drift > 0) {
+        const dev = Math.abs(factor - 1.0);
+        const alpha = Math.min(0.35 + dev/(this.results.drift+0.001)*0.65, 1).toFixed(2);
+        border = factor > 1.005
+          ? `1px solid rgba(251,191,36,${alpha})`
+          : factor < 0.995
+            ? `1px solid rgba(34,211,238,${alpha})`
+            : '1px solid transparent';
+      }
+      return { background: bg, color: col, border };
+    },
+    cellVal(row, d) {
+      const v = row[`${this.streamKey}_${d}`];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    cellTitle(row, d) {
+      const v=row[`${this.streamKey}_${d}`], f=row[`factor_${d}`];
+      return `${row.activity} · Day ${d} · ${this.heatStream}: ${v?.toFixed(3)} gal`+(f!=null?`  (×${f.toFixed(4)})`:'');
+    },
+    rowTotal(row) {
+      return this.heatDayNums.reduce((s,d)=>s+(row[`${this.streamKey}_${d}`]||0),0).toFixed(2);
+    },
+    groupDayTotal(group, d) {
+      return group.rows.reduce((s,row)=>s+(row[`${this.streamKey}_${d}`]||0),0).toFixed(2);
+    },
+    groupTotal(group) {
+      return group.rows.reduce((s,row)=>s+this.heatDayNums.reduce((ss,d)=>ss+(row[`${this.streamKey}_${d}`]||0),0),0).toFixed(2);
+    },
+    grandDayTotal(d) {
+      return (this.results?.daily_usage_by_day||[]).reduce((s,row)=>s+(row[`${this.streamKey}_${d}`]||0),0).toFixed(2);
+    },
+
+    drawScale() {
+      const canvas = document.getElementById('scaleCanvas');
+      if (!canvas) return;
+      const ctx=canvas.getContext('2d'), w=canvas.width, h=canvas.height;
+      for (let x=0;x<w;x++) { ctx.fillStyle=rampColor(this.heatStream,x/w); ctx.fillRect(x,0,1,h); }
+    },
+  },
+}).mount('#app');
+</script>
 </body>
 </html>
