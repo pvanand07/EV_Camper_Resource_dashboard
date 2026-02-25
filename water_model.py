@@ -29,12 +29,13 @@ def create_db(conn: sqlite3.Connection):
     DROP TABLE IF EXISTS tank_projection;
     DROP TABLE IF EXISTS stability_score;
 
-    -- SECTION 1: People Inputs
+    -- SECTION 1: People Inputs (UNIQUE so seed_data cannot insert duplicates if run twice, e.g. concurrent init)
     CREATE TABLE IF NOT EXISTS user_type (
         id       INTEGER PRIMARY KEY AUTOINCREMENT,
         name     TEXT NOT NULL,
         count    INTEGER NOT NULL,
-        is_child INTEGER NOT NULL DEFAULT 0
+        is_child INTEGER NOT NULL DEFAULT 0,
+        UNIQUE(name, is_child)
     );
 
     -- SECTION 2: Tank & Environment
@@ -127,7 +128,7 @@ def seed_data(conn: sqlite3.Connection):
     cur = conn.cursor()
 
     cur.executemany(
-        "INSERT INTO user_type (name, count, is_child) VALUES (?,?,?)",
+        "INSERT OR IGNORE INTO user_type (name, count, is_child) VALUES (?,?,?)",
         [
             ("Expert",   2, 0),
             ("Typical",  0, 0),

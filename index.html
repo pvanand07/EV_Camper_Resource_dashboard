@@ -385,14 +385,6 @@
 const { createApp, nextTick } = Vue;
 const API = '/api';
 
-// ── Activity groupings ────────────────────────────────────
-const GROUPS = [
-  { name: 'Hygiene',    icon: '🚿', members: ['Shower', 'Bathroom Sink'] },
-  { name: 'Kitchen',    icon: '🍳', members: ['Kitchen Sink'] },
-  { name: 'Sanitation', icon: '🚽', members: ['Toilet'] },
-  { name: 'Drinking',   icon: '💧', members: ['Drinking (Adults)', 'Drinking (Children)'] },
-];
-
 // ── Single 5-stop colour ramp for all heatmap streams ─────
 const HEAT_RAMP = ['#071a1f','#0c3d4d','#0891b2','#22d3ee','#a5f3fc'];
 
@@ -424,24 +416,13 @@ createApp({
     heatDayNums() { return Array.from({length: this.results?.target_days||0},(_,i)=>i+1); },
     streamKey()   { return this.heatStream==='black'?'back':this.heatStream; },
 
-    // Global min/max across all activities × days for current stream
+    // From backend API (Daily Usage Heatmap calculations)
     heatRange() {
-      const rows = this.results?.daily_usage_by_day;
-      if (!rows?.length) return {min:0, max:1};
-      const k = this.streamKey, days = this.heatDayNums;
-      let min=Infinity, max=-Infinity;
-      for (const row of rows) for (const d of days) {
-        const v = row[`${k}_${d}`]??0;
-        if (v<min) min=v; if (v>max) max=v;
-      }
-      return {min, max: max>min ? max : min+0.001};
+      const ranges = this.results?.heat_ranges?.[this.streamKey];
+      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
     },
-
     heatGroups() {
-      const rows = this.results?.daily_usage_by_day;
-      if (!rows?.length) return [];
-      const byName = Object.fromEntries(rows.map(r=>[r.activity,r]));
-      return GROUPS.map(g=>({...g, rows:g.members.map(m=>byName[m]).filter(Boolean)})).filter(g=>g.rows.length);
+      return this.results?.heat_groups ?? [];
     },
   },
 

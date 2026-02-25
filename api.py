@@ -94,6 +94,49 @@ class InputsUpdate(BaseModel):
     activities: list[ActivityUpdate] | None = None
 
 
+# ─── Daily Usage Heatmap (backend calculations) ────────────────────────────────
+
+HEATMAP_GROUPS = [
+    {"name": "Hygiene", "icon": "🚿", "members": ["Shower", "Bathroom Sink"]},
+    {"name": "Kitchen", "icon": "🍳", "members": ["Kitchen Sink"]},
+    {"name": "Sanitation", "icon": "🚽", "members": ["Toilet"]},
+    {"name": "Drinking", "icon": "💧", "members": ["Drinking (Adults)", "Drinking (Children)"]},
+]
+
+
+def _heatmap_ranges(daily_usage_by_day: list, target_days: int) -> dict:
+    """Min/max per stream (fresh, grey, black) across all activities × days."""
+    if not daily_usage_by_day or target_days <= 0:
+        return {"fresh": {"min": 0, "max": 1}, "grey": {"min": 0, "max": 1}, "back": {"min": 0, "max": 1}}
+    days = range(1, int(target_days) + 1)
+    streams = ("fresh", "grey", "back")
+    out = {s: {"min": float("inf"), "max": float("-inf")} for s in streams}
+    for row in daily_usage_by_day:
+        for d in days:
+            for s in streams:
+                v = row.get(f"{s}_{d}", 0) or 0
+                if v < out[s]["min"]:
+                    out[s]["min"] = v
+                if v > out[s]["max"]:
+                    out[s]["max"] = v
+    for s in streams:
+        if out[s]["max"] <= out[s]["min"]:
+            out[s]["max"] = out[s]["min"] + 0.001
+    return out
+
+
+def _heatmap_groups(daily_usage_by_day: list) -> list:
+    """Group activity rows by HEATMAP_GROUPS for heatmap table."""
+    if not daily_usage_by_day:
+        return []
+    by_name = {r["activity"]: r for r in daily_usage_by_day}
+    return [
+        {**g, "rows": [by_name[m] for m in g["members"] if m in by_name]}
+        for g in HEATMAP_GROUPS
+        if any(m in by_name for m in g["members"])
+    ]
+
+
 # ─── API Endpoints ───────────────────────────────────────────────────────────
 
 @app.get("/api/inputs")
@@ -257,6 +300,10 @@ def get_results():
         order = {r["activity_name"]: i for i, r in enumerate(activity_results)}
         daily_usage_by_day = sorted(by_activity.values(), key=lambda x: order.get(x["activity"], 999))
 
+        # Daily Usage Heatmap: ranges and groups computed on backend
+        heat_ranges = _heatmap_ranges(daily_usage_by_day, target_days)
+        heat_groups = _heatmap_groups(daily_usage_by_day)
+
         return {
             "effective_multipliers": {"shower": eff_shower, "sink": eff_sink, "toilet": eff_toilet},
             "activity_results": activity_results,
@@ -266,6 +313,8 @@ def get_results():
             "drift_seed": seed_val,
             "tank_projections": tank_projections,
             "stability_score": stability_score,
+            "heat_ranges": heat_ranges,
+            "heat_groups": heat_groups,
         }
 
 
