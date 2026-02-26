@@ -141,6 +141,23 @@
     .scale-bar { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
     .scale-gradient { width: 130px; height: 10px; border-radius: 5px; display: block; }
     .drift-note { font-size: 0.74rem; color: #475569; }
+
+    /* Realtime tab */
+    .day-switcher { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+    .day-btn { padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: 'Outfit', sans-serif; }
+    .day-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+    .day-btn.active { background: var(--accent-dim); color: var(--bg-dark); border-color: var(--accent); }
+    .day-btn.has-alert { border-color: var(--warning); color: var(--warning); }
+    .day-btn.has-alert.active { background: rgba(251,191,36,0.2); color: var(--warning); }
+    .realtime-alert { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.4); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--danger); }
+    .realtime-alert-icon { font-size: 1.1rem; }
+    .realtime-h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1rem 0 0.5rem; }
+    .realtime-h3:first-of-type { margin-top: 0; }
+    .realtime-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 0.5rem; }
+    .realtime-stat { background: var(--bg-input); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border); }
+    .realtime-stat .label { font-size: 0.8rem; color: var(--text-muted); display: block; }
+    .realtime-stat .value { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; margin-top: 0.25rem; }
+    .realtime-stat.baseline .value { font-size: 0.85rem; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -153,6 +170,7 @@
   <div class="tabs">
     <button class="tab" :class="{ active: tab==='input' }"   @click="tab='input'">Input</button>
     <button class="tab" :class="{ active: tab==='results' }" @click="tab='results'; refreshResults()">Results</button>
+    <button class="tab" :class="{ active: tab==='realtime' }" @click="tab='realtime'; loadRealtime()">Realtime</button>
   </div>
 
   <!-- ═══ INPUT TAB ════════════════════════════════════════ -->
@@ -379,6 +397,81 @@
       <button class="btn btn-secondary" @click="refreshResults">Refresh Results</button>
     </div>
   </div>
+
+  <!-- ═══ REALTIME TAB ════════════════════════════════════════ -->
+  <div class="panel" :class="{ active: tab==='realtime' }">
+    <div class="section" v-if="realtime">
+      <h2>📡 Realtime — Day view</h2>
+      <div class="day-switcher">
+        <button
+          v-for="d in realtimeDays"
+          :key="d"
+          class="day-btn"
+          :class="{ active: realtimeDay === d, 'has-alert': dayAlert(d) }"
+          @click="realtimeDay = d"
+        >Day {{ d }}</button>
+      </div>
+
+      <div
+        v-for="item in (currentDayData && currentDayData.alerts) || []"
+        :key="item.stream"
+        class="realtime-alert"
+      >
+        <span class="realtime-alert-icon">⚠️</span>
+        <span>{{ item.message }}</span>
+      </div>
+
+      <template v-if="currentDayData">
+        <div :key="'day-' + realtimeDay">
+        <h3 class="realtime-h3">Tank levels (end of day, capped at capacity)</h3>
+        <div class="realtime-stats" v-if="currentDayData?.tank_levels && realtime?.tank_capacities">
+          <div class="realtime-stat"><span class="label">💧 Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🪣 Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🚽 Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
+        </div>
+
+        <h3 class="realtime-h3">Total usage today (Day {{ realtimeDay }})</h3>
+        <div class="realtime-stats">
+          <div class="realtime-stat"><span class="label">💧 Fresh</span><span class="value">{{ currentDayData.stats.fresh_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🪣 Grey</span><span class="value">{{ currentDayData.stats.grey_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🚽 Black</span><span class="value">{{ currentDayData.stats.black_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat baseline"><span class="label">Baseline (daily)</span><span class="value">{{ currentDayData.baseline?.fresh_gal?.toFixed(2) }} / {{ currentDayData.baseline?.grey_gal?.toFixed(2) }} / {{ currentDayData.baseline?.black_gal?.toFixed(2) }} gal</span></div>
+        </div>
+
+        <h3 class="realtime-h3">Daily activities (Day {{ realtimeDay }})</h3>
+        <div class="heatmap-wrap">
+          <table class="heatmap realtime-heatmap">
+            <thead>
+              <tr>
+                <th class="th-act">Activity</th>
+                <th v-for="col in realtimeStreamCols" :key="col.streamKey">{{ col.label }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="group in realtimeHeatGroups" :key="group.name">
+                <tr class="grp-hdr">
+                  <td class="act-label" :colspan="1 + realtimeStreamCols.length">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
+                </tr>
+                <tr v-for="row in group.rows" :key="row.activity">
+                  <td class="act-label"><span class="act-name">{{ row.activity }}</span></td>
+                  <td class="heat-td" v-for="col in realtimeStreamCols" :key="col.streamKey">
+                    <div class="heat-cell" :style="realtimeCellStyleForStream(row, col.streamKey)" :title="realtimeCellTitleForStream(row, col.streamKey)">
+                      <span class="cv">{{ realtimeCellValForStream(row, col.streamKey) }}</span>
+                      <span class="cf" v-if="row['factor_'+realtimeDay] !== undefined">×{{ row['factor_'+realtimeDay]?.toFixed(2) }}</span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        </div>
+      </template>
+    </div>
+    <div class="save-bar">
+      <button class="btn btn-secondary" @click="loadRealtime">Refresh Realtime</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -400,7 +493,18 @@ function rampColor(stream, t) {
 
 createApp({
   data() {
-    return { tab:'input', inputs:null, results:null, saving:false, saveMsg:'', saveError:false, heatStream:'fresh' };
+    return {
+      tab: 'input',
+      inputs: null,
+      results: null,
+      saving: false,
+      saveMsg: '',
+      saveError: false,
+      heatStream: 'fresh',
+      realtime: null,
+      realtimeDay: 1,
+      realtimeHeatStream: 'fresh',
+    };
   },
   computed: {
     adultsTotal() {
@@ -424,11 +528,38 @@ createApp({
     heatGroups() {
       return this.results?.heat_groups ?? [];
     },
+    realtimeDays() {
+      return this.realtime?.target_days ? Array.from({ length: this.realtime.target_days }, (_, i) => i + 1) : [];
+    },
+    currentDayData() {
+      if (!this.realtime?.days) return null;
+      return this.realtime.days.find(d => d.day_num === this.realtimeDay) || null;
+    },
+    realtimeHeatGroups() {
+      return this.realtime?.heat_groups ?? [];
+    },
+    realtimeStreamCols() {
+      return [
+        { streamKey: 'fresh', label: '💧 Fresh' },
+        { streamKey: 'grey', label: '🪣 Grey' },
+        { streamKey: 'back', label: '🚽 Black' },
+      ];
+    },
+    realtimeStreamKey() {
+      return this.realtimeHeatStream === 'black' ? 'back' : this.realtimeHeatStream;
+    },
+    realtimeHeatRange() {
+      const ranges = this.realtime?.heat_ranges?.[this.realtimeStreamKey];
+      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
+    },
   },
 
   watch: {
     heatStream() { nextTick(()=>this.drawScale()); },
     results()    { nextTick(()=>this.drawScale()); },
+    realtimeHeatStream() { nextTick(()=>this.drawRealtimeScale()); },
+    realtime()   { nextTick(()=>this.drawRealtimeScale()); },
+    realtimeDay() { nextTick(()=>this.drawRealtimeScale()); },
   },
 
   mounted() { this.loadInputs(); this.refreshResults(); },
@@ -502,6 +633,102 @@ createApp({
       if (!canvas) return;
       const ctx=canvas.getContext('2d'), w=canvas.width, h=canvas.height;
       for (let x=0;x<w;x++) { ctx.fillStyle=rampColor(this.heatStream,x/w); ctx.fillRect(x,0,1,h); }
+    },
+
+    async loadRealtime() {
+      try {
+        this.realtime = await (await fetch(API + '/realtime')).json();
+        if (this.realtime?.days?.length && !this.realtimeDays.includes(this.realtimeDay)) {
+          this.realtimeDay = this.realtime.days[0].day_num;
+        }
+        nextTick(() => this.drawRealtimeScale());
+      } catch (e) {
+        this.saveMsg = 'Realtime load failed: ' + e.message;
+        this.saveError = true;
+      }
+    },
+    dayAlert(dayNum) {
+      const d = this.realtime?.days?.find(x => x.day_num === dayNum);
+      return d?.alert === true;
+    },
+    realtimeHeatRangeForStream(streamKey) {
+      const ranges = this.realtime?.heat_ranges?.[streamKey];
+      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
+    },
+    realtimeNormForStream(row, streamKey) {
+      const d = this.realtimeDay;
+      const v = row[streamKey + '_' + d] ?? 0;
+      const { min, max } = this.realtimeHeatRangeForStream(streamKey);
+      return Math.max(0, Math.min(1, (max > min ? (v - min) / (max - min) : 0)));
+    },
+    realtimeCellStyleForStream(row, streamKey) {
+      const t = this.realtimeNormForStream(row, streamKey);
+      const streamName = streamKey === 'back' ? 'black' : streamKey;
+      const bg = rampColor(streamName, t);
+      const col = t > 0.42 ? '#f1f5f9' : '#64748b';
+      const factor = row['factor_' + this.realtimeDay];
+      let border = '1px solid transparent';
+      if (factor != null && this.realtime?.baseline) {
+        const dev = Math.abs(factor - 1.0);
+        const alpha = Math.min(0.35 + dev * 0.65, 1).toFixed(2);
+        border = factor > 1.005
+          ? '1px solid rgba(251,191,36,' + alpha + ')'
+          : factor < 0.995
+            ? '1px solid rgba(34,211,238,' + alpha + ')'
+            : '1px solid transparent';
+      }
+      return { background: bg, color: col, border };
+    },
+    realtimeCellValForStream(row, streamKey) {
+      const v = row[streamKey + '_' + this.realtimeDay];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    realtimeCellTitleForStream(row, streamKey) {
+      const v = row[streamKey + '_' + this.realtimeDay];
+      const f = row['factor_' + this.realtimeDay];
+      const streamLabel = streamKey === 'back' ? 'Black' : (streamKey === 'fresh' ? 'Fresh' : 'Grey');
+      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + streamLabel + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
+    },
+    realtimeNorm(row) {
+      const d = this.realtimeDay;
+      const v = row[this.realtimeStreamKey + '_' + d] ?? 0;
+      const { min, max } = this.realtimeHeatRange;
+      return Math.max(0, Math.min(1, (v - min) / (max - min)));
+    },
+    realtimeCellStyle(row) {
+      const t = this.realtimeNorm(row);
+      const bg = rampColor(this.realtimeHeatStream, t);
+      const col = t > 0.42 ? '#f1f5f9' : '#64748b';
+      const factor = row['factor_' + this.realtimeDay];
+      let border = '1px solid transparent';
+      if (factor != null && this.realtime?.baseline) {
+        const dev = Math.abs(factor - 1.0);
+        const alpha = Math.min(0.35 + dev * 0.65, 1).toFixed(2);
+        border = factor > 1.005
+          ? '1px solid rgba(251,191,36,' + alpha + ')'
+          : factor < 0.995
+            ? '1px solid rgba(34,211,238,' + alpha + ')'
+            : '1px solid transparent';
+      }
+      return { background: bg, color: col, border };
+    },
+    realtimeCellVal(row) {
+      const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    realtimeCellTitle(row) {
+      const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
+      const f = row['factor_' + this.realtimeDay];
+      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + this.realtimeHeatStream + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
+    },
+    drawRealtimeScale() {
+      const canvas = document.getElementById('realtimeScaleCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
+      for (let x = 0; x < w; x++) {
+        ctx.fillStyle = rampColor(this.realtimeHeatStream, x / w);
+        ctx.fillRect(x, 0, 1, h);
+      }
     },
   },
 }).mount('#app');

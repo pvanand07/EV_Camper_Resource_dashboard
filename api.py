@@ -318,6 +318,183 @@ def get_results():
         }
 
 
+# ─── Realtime: per-day stats and 10% baseline alerts ─────────────────────────
+
+def _realtime_baseline(activity_results: list) -> dict:
+    """Baseline daily totals from activity_result (deterministic)."""
+    fresh = sum(r.get("daily_fresh_gal") or 0 for r in activity_results)
+    grey = sum(r.get("grey_added_gal") or 0 for r in activity_results)
+    black = sum(r.get("black_added_gal") or 0 for r in activity_results)
+    return {"fresh_gal": round(fresh, 2), "grey_gal": round(grey, 2), "black_gal": round(black, 2)}
+
+
+def _realtime_day_totals(raw_rows: list, day_num: int) -> dict:
+    """Sum fresh/grey/black for a given day from daily_usage_by_day rows."""
+    fresh = sum(r["fresh_gal"] for r in raw_rows if r["day_num"] == day_num)
+    grey = sum(r["grey_gal"] for r in raw_rows if r["day_num"] == day_num)
+    black = sum(r["black_gal"] for r in raw_rows if r["day_num"] == day_num)
+    return {"fresh_gal": round(fresh, 2), "grey_gal": round(grey, 2), "black_gal": round(black, 2)}
+
+
+def _realtime_day_activities(raw_rows: list, day_num: int) -> list:
+    """Per-activity usage for a given day."""
+    return [
+        {
+            "activity_name": r["activity_name"],
+            "fresh_gal": round(r["fresh_gal"], 2),
+            "grey_gal": round(r["grey_gal"], 2),
+            "black_gal": round(r["black_gal"], 2),
+            "drift_factor": round(r["drift_factor"], 3),
+        }
+        for r in raw_rows
+        if r["day_num"] == day_num
+    ]
+
+
+@app.get("/api/realtime")
+def get_realtime():
+    """Realtime view: per-day stats, daily activities, and alerts when usage > 10% above baseline."""
+    with get_conn() as conn:
+        ensure_initialized(conn)
+        water_model.compute_and_store(conn)
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT target_autonomy_days, fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
+                   current_fresh_gal, current_grey_gal, current_black_gal
+            FROM tank_environment LIMIT 1
+        """)
+        row = cur.fetchone()
+        target_days = max(1, int(row[0])) if row else 5
+        fresh_cap = float(row[1]) if row else 100
+        grey_cap = float(row[2]) if row else 80
+        black_cap = float(row[3]) if row else 40
+        cur_fresh = float(row[4]) if row else 100
+        cur_grey = float(row[5]) if row else 0
+        cur_black = float(row[6]) if row else 0
+
+        tank_capacities = {
+            "fresh_gal": round(fresh_cap, 2),
+            "grey_gal": round(grey_cap, 2),
+            "black_gal": round(black_cap, 2),
+        }
+
+        cur.execute("""
+            SELECT activity_name, daily_fresh_gal, grey_added_gal, black_added_gal
+            FROM activity_result
+        """)
+        activity_results = [dict(r) for r in cur.fetchall()]
+        baseline = _realtime_baseline(activity_results)
+
+        cur.execute("""
+            SELECT activity_name, day_num, fresh_gal, grey_gal, black_gal, drift_factor
+            FROM daily_usage_by_day ORDER BY activity_name, day_num
+        """)
+        raw_rows = [dict(r) for r in cur.fetchall()]
+
+        # Build daily_usage_by_day (pivot) for heatmap reuse
+        by_activity = {}
+        for r in raw_rows:
+            name, day, fresh, grey, black, factor = (
+                r["activity_name"], r["day_num"], r["fresh_gal"], r["grey_gal"], r["black_gal"], r["drift_factor"]
+            )
+            if name not in by_activity:
+                by_activity[name] = {"activity": name}
+            by_activity[name][f"fresh_{day}"] = round(fresh, 2)
+            by_activity[name][f"grey_{day}"] = round(grey, 2)
+            by_activity[name][f"back_{day}"] = round(black, 2)
+            by_activity[name][f"factor_{day}"] = round(factor, 3)
+        order = {r["activity_name"]: i for i, r in enumerate(activity_results)}
+        daily_usage_by_day = sorted(by_activity.values(), key=lambda x: order.get(x["activity"], 999))
+
+        heat_ranges = _heatmap_ranges(daily_usage_by_day, target_days)
+        heat_groups = _heatmap_groups(daily_usage_by_day)
+
+        # Cumulative tank levels per day (capped to 0 and capacity)
+        def _cap_fresh(gal):
+            return round(max(0, min(fresh_cap, gal)), 2)
+
+        def _cap_grey(gal):
+            return round(max(0, min(grey_cap, gal)), 2)
+
+        def _cap_black(gal):
+            return round(max(0, min(black_cap, gal)), 2)
+
+        running_fresh = cur_fresh
+        running_grey = cur_grey
+        running_black = cur_black
+
+        # Per-day summaries, tank levels, and alerts (>10% above baseline)
+        threshold = 1.10
+        days = []
+        for day_num in range(1, target_days + 1):
+            totals = _realtime_day_totals(raw_rows, day_num)
+            activities = _realtime_day_activities(raw_rows, day_num)
+
+            # Apply day's usage: fresh decreases, grey/black increase; cap to capacity
+            running_fresh = _cap_fresh(running_fresh - totals["fresh_gal"])
+            running_grey = _cap_grey(running_grey + totals["grey_gal"])
+            running_black = _cap_black(running_black + totals["black_gal"])
+            tank_levels = {
+                "fresh_gal": running_fresh,
+                "grey_gal": running_grey,
+                "black_gal": running_black,
+            }
+
+            alert_fresh = baseline["fresh_gal"] > 0 and totals["fresh_gal"] > baseline["fresh_gal"] * threshold
+            alert_grey = baseline["grey_gal"] > 0 and totals["grey_gal"] > baseline["grey_gal"] * threshold
+            alert_black = baseline["black_gal"] > 0 and totals["black_gal"] > baseline["black_gal"] * threshold
+            alert = alert_fresh or alert_grey or alert_black
+
+            def _pct_above(baseline_gal, actual_gal):
+                if baseline_gal <= 0:
+                    return 0
+                return round((actual_gal / baseline_gal - 1) * 100)
+
+            alerts_list = []
+            stream_labels = {"fresh": "Fresh", "grey": "Grey", "black": "Black"}
+            if alert_fresh:
+                pct = _pct_above(baseline["fresh_gal"], totals["fresh_gal"])
+                alerts_list.append({
+                    "stream": "fresh",
+                    "message": f"{stream_labels['fresh']} water usage is {pct}% more than usual",
+                })
+            if alert_grey:
+                pct = _pct_above(baseline["grey_gal"], totals["grey_gal"])
+                alerts_list.append({
+                    "stream": "grey",
+                    "message": f"{stream_labels['grey']} water usage is {pct}% more than usual",
+                })
+            if alert_black:
+                pct = _pct_above(baseline["black_gal"], totals["black_gal"])
+                alerts_list.append({
+                    "stream": "black",
+                    "message": f"{stream_labels['black']} water usage is {pct}% more than usual",
+                })
+
+            days.append({
+                "day_num": int(day_num),
+                "stats": totals,
+                "baseline": baseline,
+                "activities": activities,
+                "tank_levels": tank_levels,
+                "alert": alert,
+                "alert_fresh": alert_fresh,
+                "alert_grey": alert_grey,
+                "alert_black": alert_black,
+                "alerts": alerts_list,
+            })
+    return {
+        "target_days": target_days,
+        "baseline": baseline,
+        "tank_capacities": tank_capacities,
+        "days": days,
+        "daily_usage_by_day": daily_usage_by_day,
+        "heat_ranges": heat_ranges,
+        "heat_groups": heat_groups,
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)

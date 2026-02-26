@@ -130,9 +130,9 @@ def seed_data(conn: sqlite3.Connection):
     cur.executemany(
         "INSERT OR IGNORE INTO user_type (name, count, is_child) VALUES (?,?,?)",
         [
-            ("Expert",   2, 0),
+            ("Expert",   1, 0),
             ("Typical",  0, 0),
-            ("Glamper",  1, 0),
+            ("Glamper",  0, 0),
             ("Children", 2, 1),
         ]
     )
@@ -142,7 +142,7 @@ def seed_data(conn: sqlite3.Connection):
           (fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
            current_fresh_gal,  current_grey_gal,  current_black_gal,
            climate_multiplier, target_autonomy_days, drift, drift_seed)
-        VALUES (100, 80, 40, 100, 0, 0, 1.0, 5, 0.0, NULL)
+        VALUES (100, 80, 40, 100, 0, 0, 1.0, 5, 0.4, 41)
     """)
 
     cur.executemany(
