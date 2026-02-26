@@ -50,7 +50,8 @@ def create_db(conn: sqlite3.Connection):
         climate_multiplier   REAL NOT NULL DEFAULT 1.0,
         target_autonomy_days REAL NOT NULL DEFAULT 5,
         drift                REAL NOT NULL DEFAULT 0.0,  -- 0=none, 1=max. controls per-day normal drift
-        drift_seed           INTEGER                     -- NULL = random each run, integer = locked seed
+        drift_seed           INTEGER,                    -- NULL = random each run, integer = locked seed
+        alert_threshold      REAL NOT NULL DEFAULT 0.10  -- fraction; e.g. 0.10 = alert when usage >10% above baseline
     );
 
     -- SECTION 3: Behavior Multipliers per user type
@@ -141,8 +142,8 @@ def seed_data(conn: sqlite3.Connection):
         INSERT INTO tank_environment
           (fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
            current_fresh_gal,  current_grey_gal,  current_black_gal,
-           climate_multiplier, target_autonomy_days, drift, drift_seed)
-        VALUES (100, 80, 40, 100, 0, 0, 1.0, 5, 0.4, 41)
+           climate_multiplier, target_autonomy_days, drift, drift_seed, alert_threshold)
+        VALUES (100, 80, 40, 100, 0, 0, 1.0, 5, 0.4, 41, 0.10)
     """)
 
     cur.executemany(
@@ -206,6 +207,12 @@ def _migrate(conn: sqlite3.Connection):
     # drift_seed column on tank_environment
     try:
         cur.execute("ALTER TABLE tank_environment ADD COLUMN drift_seed INTEGER")
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    # alert_threshold column on tank_environment (fraction; 0.10 = 10%)
+    try:
+        cur.execute("ALTER TABLE tank_environment ADD COLUMN alert_threshold REAL NOT NULL DEFAULT 0.10")
     except sqlite3.OperationalError:
         pass  # already exists
 

@@ -198,6 +198,7 @@
         <div class="form-row"><label>Current Black Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" /></div>
         <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
         <div class="form-row"><label>Target Autonomy Days</label><input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" /></div>
+        <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
         <div class="drift-row">
           <div class="drift-top">
             <div>
@@ -514,6 +515,7 @@ createApp({
     totalGrey()  { return this.results?.activity_results?.reduce((s,r)=>s+(r.grey_added_gal||0),0)  ?? 0; },
     totalBlack() { return this.results?.activity_results?.reduce((s,r)=>s+(r.black_added_gal||0),0) ?? 0; },
     driftPct() { return ((this.inputs?.tank_environment?.drift??0)*100).toFixed(0)+'%'; },
+    alertThresholdPct() { return Math.round((this.inputs?.tank_environment?.alert_threshold ?? 0.10) * 100); },
     driftSd()  { return ((this.inputs?.tank_environment?.drift??0)/2).toFixed(2); },
     driftLo()  { return (1-(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
     driftHi()  { return (1+(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
@@ -587,6 +589,10 @@ createApp({
     onSeedInput(e) {
       const v=e.target.value.trim();
       this.inputs.tank_environment.drift_seed = v===''?null:parseInt(v,10);
+    },
+    onAlertThresholdInput(e) {
+      const v = parseFloat(e.target.value);
+      if (!Number.isNaN(v)) this.inputs.tank_environment.alert_threshold = Math.max(0, Math.min(1, v / 100));
     },
     statusClass(s) {
       if (!s) return '';

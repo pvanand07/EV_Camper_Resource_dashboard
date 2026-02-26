@@ -67,6 +67,7 @@ class TankEnvironmentUpdate(BaseModel):
     target_autonomy_days: float = 5
     drift: float = 0.0          # NEW — 0 = deterministic, 1 = max normal drift
     drift_seed: int | None = None  # None = fresh random each run, int = locked seed
+    alert_threshold: float = 0.10  # fraction; e.g. 0.10 = alert when usage >10% above baseline
 
 
 class BehaviorMultiplierUpdate(BaseModel):
@@ -161,6 +162,7 @@ def get_inputs():
             "target_autonomy_days": row["target_autonomy_days"],
             "drift":                row["drift"],
             "drift_seed":           row["drift_seed"],
+            "alert_threshold":      row["alert_threshold"],
         } if row else None
 
         cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
@@ -200,12 +202,14 @@ def put_inputs(payload: InputsUpdate):
                 UPDATE tank_environment SET
                     fresh_capacity_gal = ?, grey_capacity_gal = ?, black_capacity_gal = ?,
                     current_fresh_gal = ?, current_grey_gal = ?, current_black_gal = ?,
-                    climate_multiplier = ?, target_autonomy_days = ?, drift = ?, drift_seed = ?
+                    climate_multiplier = ?, target_autonomy_days = ?, drift = ?, drift_seed = ?,
+                    alert_threshold = ?
                 WHERE id = 1
             """, (
                 t.fresh_capacity_gal, t.grey_capacity_gal, t.black_capacity_gal,
                 t.current_fresh_gal, t.current_grey_gal, t.current_black_gal,
                 t.climate_multiplier, t.target_autonomy_days, t.drift, t.drift_seed,
+                t.alert_threshold,
             ))
 
         if payload.behavior_multipliers is not None:
@@ -361,7 +365,7 @@ def get_realtime():
 
         cur.execute("""
             SELECT target_autonomy_days, fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
-                   current_fresh_gal, current_grey_gal, current_black_gal
+                   current_fresh_gal, current_grey_gal, current_black_gal, alert_threshold
             FROM tank_environment LIMIT 1
         """)
         row = cur.fetchone()
@@ -372,6 +376,7 @@ def get_realtime():
         cur_fresh = float(row[4]) if row else 100
         cur_grey = float(row[5]) if row else 0
         cur_black = float(row[6]) if row else 0
+        alert_threshold_frac = float(row[7]) if row and row[7] is not None else 0.10
 
         tank_capacities = {
             "fresh_gal": round(fresh_cap, 2),
@@ -424,8 +429,8 @@ def get_realtime():
         running_grey = cur_grey
         running_black = cur_black
 
-        # Per-day summaries, tank levels, and alerts (>10% above baseline)
-        threshold = 1.10
+        # Per-day summaries, tank levels, and alerts (usage above baseline by alert_threshold fraction)
+        threshold = 1.0 + alert_threshold_frac
         days = []
         for day_num in range(1, target_days + 1):
             totals = _realtime_day_totals(raw_rows, day_num)
