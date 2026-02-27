@@ -54,10 +54,10 @@ def create_db(conn: sqlite3.Connection):
         alert_threshold      REAL NOT NULL DEFAULT 0.10  -- fraction; e.g. 0.10 = alert when usage >10% above baseline
     );
 
-    -- SECTION 3: Behavior Multipliers per user type
+    -- SECTION 3: Behavior Multipliers per user type (one row per user_type)
     CREATE TABLE IF NOT EXISTS behavior_multiplier (
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_type    TEXT NOT NULL,
+        user_type    TEXT NOT NULL UNIQUE,
         shower_mult  REAL NOT NULL,
         sink_mult    REAL NOT NULL,
         toilet_mult  REAL NOT NULL
@@ -77,7 +77,8 @@ def create_db(conn: sqlite3.Connection):
         uses_sink_mult             INTEGER NOT NULL DEFAULT 0,
         uses_toilet_mult           INTEGER NOT NULL DEFAULT 0,
         uses_adults                INTEGER NOT NULL DEFAULT 0,
-        uses_children              INTEGER NOT NULL DEFAULT 0
+        uses_children              INTEGER NOT NULL DEFAULT 0,
+        UNIQUE(name)
     );
 
     -- SECTION 4: Activity Engine — computed daily results (deterministic baseline)
@@ -147,7 +148,7 @@ def seed_data(conn: sqlite3.Connection):
     """)
 
     cur.executemany(
-        "INSERT INTO behavior_multiplier "
+        "INSERT OR IGNORE INTO behavior_multiplier "
         "(user_type, shower_mult, sink_mult, toilet_mult) VALUES (?,?,?,?)",
         [
             ("Expert",  0.6, 0.7, 1.0),
@@ -157,7 +158,7 @@ def seed_data(conn: sqlite3.Connection):
     )
 
     cur.executemany("""
-        INSERT INTO activity
+        INSERT OR IGNORE INTO activity
           (name, flow_gal_per_min, duration_min, events_per_day_per_person,
            gal_per_unit, grey_pct, black_pct,
            uses_shower_mult, uses_sink_mult, uses_toilet_mult,
@@ -216,6 +217,19 @@ def _migrate(conn: sqlite3.Connection):
     except sqlite3.OperationalError:
         pass  # already exists
 
+    # Activity table hygiene:
+    # 1) keep only the earliest row per activity name
+    # 2) enforce uniqueness going forward
+    cur.execute("""
+        DELETE FROM activity
+        WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM activity
+            GROUP BY name
+        )
+    """)
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_activity_name_unique ON activity(name)")
+
     # Default current_fresh_gal to 100 if it was seeded as 0
     cur.execute("UPDATE tank_environment SET current_fresh_gal = 100 WHERE id = 1 AND current_fresh_gal = 0")
 
@@ -259,7 +273,7 @@ def compute_and_store(conn: sqlite3.Connection):
     row = cur.fetchone()
     (_, fresh_cap, grey_cap, black_cap,
      cur_fresh, cur_grey, cur_black,
-     climate_mult, target_days, drift, drift_seed) = row
+     climate_mult, target_days, drift, drift_seed, _) = row
 
     # Per-cell RNG factory.
     # When drift_seed is set: each (activity, day) gets its own Random instance seeded
