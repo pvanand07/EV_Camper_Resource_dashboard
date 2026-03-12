@@ -376,12 +376,12 @@ def compute_and_store(conn: sqlite3.Connection):
     d_black = safe_days(black_cap - cur_black,  total_black)
 
     def status_fresh(d):
-        if d >= target_days:         return "✅ On Track"
+        if d >= target_days:         return "✓"
         elif d >= target_days * 0.5: return "⚠️  Low"
         else:                         return "🔴 Critical"
 
     def status_waste(d):
-        if d >= target_days:         return "✅ On Track"
+        if d >= target_days:         return "✓"
         elif d >= target_days * 0.5: return "⚠️  Getting Full"
         else:                         return "🔴 Dump Soon!"
 
