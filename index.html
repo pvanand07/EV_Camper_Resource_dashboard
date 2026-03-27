@@ -142,6 +142,25 @@
     .heatmap-unit-note { font-size: 0.75rem; color: var(--text-muted); }
     .drift-note { font-size: 0.74rem; color: #475569; }
 
+    /* Greywater recycling toggle row */
+    .greywater-row { grid-column: 1/-1; background: #0a1f14; border: 1px solid rgba(52,211,153,0.25); border-radius: 10px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .greywater-row.active { border-color: rgba(52,211,153,0.55); background: rgba(52,211,153,0.06); }
+    .greywater-info { flex: 1; }
+    .greywater-label { font-size: 0.9rem; font-weight: 600; color: #34d399; display: flex; align-items: center; gap: 0.4rem; }
+    .greywater-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+    .greywater-savings { font-size: 0.78rem; color: rgba(52,211,153,0.7); margin-top: 0.3rem; }
+
+    /* Toggle switch */
+    .toggle { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: 26px; transition: 0.2s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: var(--text-muted); border-radius: 50%; transition: 0.2s; }
+    .toggle input:checked + .toggle-slider { background: rgba(52,211,153,0.35); border: 1px solid #34d399; }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(22px); background: #34d399; }
+
+    /* Greywater chip for results/realtime headers */
+    .grey-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: #34d399; margin-left: 0.5rem; }
+
     /* Realtime tab */
     .day-switcher { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
     .day-btn { padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: 'Outfit', sans-serif; }
@@ -226,6 +245,24 @@
             </div>
           </div>
         </div>
+
+        <!-- Greywater Recycling toggle -->
+        <div class="greywater-row" :class="{ active: greywaterRecycle }">
+          <div class="greywater-info">
+            <div class="greywater-label">♻️ Greywater Recycling</div>
+            <div class="greywater-desc">
+              Accumulated grey water from the previous day (shower, sinks) is redirected to toilet flushing, reducing fresh water consumption.
+            </div>
+            <div class="greywater-savings" v-if="greywaterRecycle">
+              See Results → Tank Projections for the impact on fresh &amp; grey autonomy days.
+            </div>
+          </div>
+          <label class="toggle" title="Toggle greywater recycling">
+            <input type="checkbox" v-model="greywaterRecycle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
       </div>
     </div>
 
@@ -361,7 +398,10 @@
 
     <!-- Tank projections -->
     <div class="section" v-if="results?.tank_projections?.length">
-      <h2>🔋 Tank Projections <span class="badge">based on deterministic baseline</span></h2>
+      <h2>
+        🔋 Tank Projections <span class="badge">based on deterministic baseline</span>
+        <span class="grey-chip" v-if="results.greywater_recycle">♻️ greywater recycling on</span>
+      </h2>
       <table class="results-table">
         <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Days Left</th><th>Status</th></tr></thead>
         <tbody>
@@ -397,7 +437,10 @@
   <!-- ═══ REALTIME TAB ════════════════════════════════════════ -->
   <div class="panel" :class="{ active: tab==='realtime' }">
     <div class="section" v-if="realtime">
-      <h2>📡 Realtime — Day view</h2>
+      <h2>
+        📡 Realtime — Day view
+        <span class="grey-chip" v-if="realtime.greywater_recycle">♻️ greywater recycling on</span>
+      </h2>
       <div class="day-switcher">
         <button
           v-for="d in realtimeDays"
@@ -424,6 +467,10 @@
           <div class="realtime-stat"><span class="label">💧 Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
           <div class="realtime-stat"><span class="label">🪣 Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
           <div class="realtime-stat"><span class="label">🚽 Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
+          <div class="realtime-stat" v-if="realtime.greywater_recycle && realtimeDay > 1 && currentDayData.grey_recycled_gal > 0" style="border-color:rgba(52,211,153,0.35);">
+            <span class="label" style="color:#34d399;">♻️ Grey recycled</span>
+            <span class="value" style="color:#34d399;">{{ currentDayData.grey_recycled_gal?.toFixed(2) }} gal → toilet</span>
+          </div>
         </div>
 
         <h3 class="realtime-h3">Total usage today (Day {{ realtimeDay }})</h3>
@@ -480,6 +527,23 @@ function streamStyle(stream) {
   return FRESH_STYLE;
 }
 
+/** Empty cleared number inputs become "" in Vue; coerce before API JSON. */
+function coerceInt(v, def = 0) {
+  if (v === '' || v === null || v === undefined) return def;
+  const n = parseInt(String(v), 10);
+  return Number.isFinite(n) ? n : def;
+}
+function coerceFloat(v, def = 0) {
+  if (v === '' || v === null || v === undefined) return def;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : def;
+}
+function coerceOptFloat(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 createApp({
   data() {
     return {
@@ -502,6 +566,10 @@ createApp({
     totalFresh() { return this.results?.activity_results?.reduce((s,r)=>s+(r.daily_fresh_gal||0),0) ?? 0; },
     totalGrey()  { return this.results?.activity_results?.reduce((s,r)=>s+(r.grey_added_gal||0),0)  ?? 0; },
     totalBlack() { return this.results?.activity_results?.reduce((s,r)=>s+(r.black_added_gal||0),0) ?? 0; },
+    greywaterRecycle: {
+      get() { return !!(this.inputs?.tank_environment?.greywater_recycle); },
+      set(v) { if (this.inputs?.tank_environment) this.inputs.tank_environment.greywater_recycle = v ? 1 : 0; },
+    },
     driftPct() { return ((this.inputs?.tank_environment?.drift??0)*100).toFixed(0)+'%'; },
     alertThresholdPct() { return Math.round((this.inputs?.tank_environment?.alert_threshold ?? 0.10) * 100); },
     driftSd()  { return ((this.inputs?.tank_environment?.drift??0)/2).toFixed(2); },
@@ -563,10 +631,45 @@ createApp({
       try { this.results = await (await fetch(API+'/results')).json(); }
       catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
     },
-    userCount(ut) { return this.inputs?.user_types?.find(x=>x.name===ut&&!x.is_child)?.count??0; },
+    userCount(ut) { return this.inputs?.user_types?.find(x=>x.name===ut)?.count??0; },
+    normalizeInputsBeforeSave() {
+      if (!this.inputs) return;
+      for (const u of this.inputs.user_types) {
+        u.count = coerceInt(u.count, 0);
+        u.is_child = coerceInt(u.is_child, 0);
+      }
+      const t = this.inputs.tank_environment;
+      if (t) {
+        t.fresh_capacity_gal = coerceFloat(t.fresh_capacity_gal, 100);
+        t.grey_capacity_gal = coerceFloat(t.grey_capacity_gal, 80);
+        t.black_capacity_gal = coerceFloat(t.black_capacity_gal, 40);
+        t.current_fresh_gal = coerceFloat(t.current_fresh_gal, 100);
+        t.current_grey_gal = coerceFloat(t.current_grey_gal, 0);
+        t.current_black_gal = coerceFloat(t.current_black_gal, 0);
+        t.climate_multiplier = coerceFloat(t.climate_multiplier, 1);
+        t.target_autonomy_days = coerceFloat(t.target_autonomy_days, 5);
+        t.drift = coerceFloat(t.drift, 0);
+        t.alert_threshold = coerceFloat(t.alert_threshold, 0.1);
+        t.greywater_recycle = t.greywater_recycle ? 1 : 0;
+      }
+      for (const b of this.inputs.behavior_multipliers) {
+        b.shower_mult = coerceFloat(b.shower_mult, 0);
+        b.sink_mult = coerceFloat(b.sink_mult, 0);
+        b.toilet_mult = coerceFloat(b.toilet_mult, 0);
+      }
+      for (const a of this.inputs.activities) {
+        a.flow_gal_per_min = coerceOptFloat(a.flow_gal_per_min);
+        a.duration_min = coerceOptFloat(a.duration_min);
+        a.events_per_day_per_person = coerceOptFloat(a.events_per_day_per_person);
+        a.gal_per_unit = coerceOptFloat(a.gal_per_unit);
+        a.grey_pct = coerceFloat(a.grey_pct, 0);
+        a.black_pct = coerceFloat(a.black_pct, 0);
+      }
+    },
     async saveInputs() {
       this.saving=true; this.saveMsg=''; this.saveError=false;
       try {
+        this.normalizeInputsBeforeSave();
         const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
         if (!r.ok) throw new Error(await r.text());
         this.saveMsg='Saved. Results updated.';

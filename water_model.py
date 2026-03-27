@@ -51,7 +51,8 @@ def create_db(conn: sqlite3.Connection):
         target_autonomy_days REAL NOT NULL DEFAULT 5,
         drift                REAL NOT NULL DEFAULT 0.0,  -- 0=none, 1=max. controls per-day normal drift
         drift_seed           INTEGER,                    -- NULL = random each run, integer = locked seed
-        alert_threshold      REAL NOT NULL DEFAULT 0.10  -- fraction; e.g. 0.10 = alert when usage >10% above baseline
+        alert_threshold      REAL NOT NULL DEFAULT 0.10, -- fraction; e.g. 0.10 = alert when usage >10% above baseline
+        greywater_recycle    INTEGER NOT NULL DEFAULT 0  -- 1 = redirect prev-day grey to toilet flushing
     );
 
     -- SECTION 3: Behavior Multipliers per user type (one row per user_type)
@@ -143,17 +144,19 @@ def seed_data(conn: sqlite3.Connection):
         INSERT INTO tank_environment
           (fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
            current_fresh_gal,  current_grey_gal,  current_black_gal,
-           climate_multiplier, target_autonomy_days, drift, drift_seed, alert_threshold)
-        VALUES (100, 80, 40, 100, 0, 0, 1.0, 5, 0.4, 41, 0.10)
+           climate_multiplier, target_autonomy_days, drift, drift_seed, alert_threshold,
+           greywater_recycle)
+        VALUES (100, 80, 40, 100, 0, 0, 1.0, 5, 0.4, 41, 0.10, 0)
     """)
 
     cur.executemany(
         "INSERT OR IGNORE INTO behavior_multiplier "
         "(user_type, shower_mult, sink_mult, toilet_mult) VALUES (?,?,?,?)",
         [
-            ("Expert",  0.6, 0.7, 1.0),
-            ("Typical", 1.0, 1.0, 1.0),
-            ("Glamper", 1.5, 1.4, 1.0),
+            ("Expert",   0.6, 0.7, 1.0),
+            ("Typical",  1.0, 1.0, 1.0),
+            ("Glamper",  1.5, 1.4, 1.0),
+            ("Children", 0.5, 0.6, 0.8),  # children: shorter showers, less sink, lighter toilet use
         ]
     )
 
@@ -217,6 +220,16 @@ def _migrate(conn: sqlite3.Connection):
     except sqlite3.OperationalError:
         pass  # already exists
 
+    # greywater_recycle flag: redirect prev-day accumulated grey to toilet flushing
+    try:
+        cur.execute("ALTER TABLE tank_environment ADD COLUMN greywater_recycle INTEGER NOT NULL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    # Children behavior multipliers — add if missing (existing DBs pre-date this feature)
+    cur.execute("INSERT OR IGNORE INTO behavior_multiplier (user_type, shower_mult, sink_mult, toilet_mult) VALUES (?,?,?,?)",
+                ("Children", 0.5, 0.6, 0.8))
+
     # Activity table hygiene:
     # 1) keep only the earliest row per activity name
     # 2) enforce uniqueness going forward
@@ -268,12 +281,17 @@ def compute_and_store(conn: sqlite3.Connection):
     adults_total = sum(r[1] for r in users if r[2] == 0)
     children     = next((r[1] for r in users if r[2] == 1), 0)
 
-    # ── Load environment (including drift)
-    cur.execute("SELECT * FROM tank_environment LIMIT 1")
+    # ── Load environment (including drift and greywater_recycle)
+    cur.execute("""
+        SELECT fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
+               current_fresh_gal, current_grey_gal, current_black_gal,
+               climate_multiplier, target_autonomy_days, drift, drift_seed, greywater_recycle
+        FROM tank_environment LIMIT 1
+    """)
     row = cur.fetchone()
-    (_, fresh_cap, grey_cap, black_cap,
+    (fresh_cap, grey_cap, black_cap,
      cur_fresh, cur_grey, cur_black,
-     climate_mult, target_days, drift, drift_seed, _) = row
+     climate_mult, target_days, drift, drift_seed, greywater_recycle) = row
 
     # Per-cell RNG factory.
     # When drift_seed is set: each (activity, day) gets its own Random instance seeded
@@ -284,14 +302,16 @@ def compute_and_store(conn: sqlite3.Connection):
             return random.Random(hash((int(drift_seed), name, day)))
         return random.Random()
 
-    # ── Section 3: Effective multipliers via SUMPRODUCT
+    # ── Section 3: Effective multipliers via SUMPRODUCT (adults + children)
     cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
     mults     = {r[0]: r[1:] for r in cur.fetchall()}
-    count_map = {r[0]: r[1] for r in users if r[2] == 0}
+    # Include ALL user types (adults and children) so shower/sink/toilet properly
+    # account for children via their own behaviour multipliers.
+    count_map = {r[0]: r[1] for r in users}
 
-    eff_shower = sum(count_map[ut] * mults[ut][0] for ut in count_map)
-    eff_sink   = sum(count_map[ut] * mults[ut][1] for ut in count_map)
-    eff_toilet = sum(count_map[ut] * mults[ut][2] for ut in count_map)
+    eff_shower = sum(count_map.get(ut, 0) * mults[ut][0] for ut in mults)
+    eff_sink   = sum(count_map.get(ut, 0) * mults[ut][1] for ut in mults)
+    eff_toilet = sum(count_map.get(ut, 0) * mults[ut][2] for ut in mults)
 
     # ── Section 4: Baseline daily fresh per activity (deterministic)
     cur.execute("""
@@ -322,24 +342,40 @@ def compute_and_store(conn: sqlite3.Connection):
         computed.append((name, fresh, grey_pct, black_pct))
 
     total_fresh = sum(c[1] for c in computed)
+    total_grey  = sum(c[1] * c[2] for c in computed)
+    total_black = sum(c[1] * c[3] for c in computed)
 
-    # ── Store ActivityResult (always deterministic baseline — no drift here)
+    # ── Greywater recycling: steady-state daily savings
+    # Previous day's grey is redirected to toilet flushing instead of fresh water.
+    # Savings = min(toilet baseline fresh, total grey produced per day).
+    toilet_fresh_baseline = next((c[1] for c in computed if c[0] == 'Toilet'), 0.0)
+    grey_recycled_per_day = min(toilet_fresh_baseline, total_grey) if greywater_recycle else 0.0
+    total_fresh_eff  = total_fresh - grey_recycled_per_day
+    total_grey_eff   = total_grey  - grey_recycled_per_day  # recycled grey is consumed, not left in tank
+
+    # ── Store ActivityResult (deterministic baseline, adjusted for greywater recycling)
     cur.execute("DELETE FROM activity_result")
     for name, fresh, grey_pct, black_pct in computed:
-        attrib = (fresh / total_fresh * 100) if total_fresh > 0 else 0
+        if greywater_recycle and name == 'Toilet':
+            # Fresh drawn from tank is reduced; black waste volume unchanged (same flush volume)
+            eff_fresh   = max(0.0, fresh - grey_recycled_per_day)
+            grey_added  = eff_fresh * grey_pct            # toilet grey_pct=0, stays 0
+            black_added = fresh * black_pct               # waste volume unchanged
+        else:
+            eff_fresh   = fresh
+            grey_added  = fresh * grey_pct
+            black_added = fresh * black_pct
+        attrib = (eff_fresh / total_fresh_eff * 100) if total_fresh_eff > 0 else 0
         cur.execute("""
             INSERT INTO activity_result
               (activity_name, daily_fresh_gal, grey_added_gal,
                black_added_gal, fresh_attrib_pct)
             VALUES (?,?,?,?,?)
         """, (name,
-              round(fresh, 4),
-              round(fresh * grey_pct, 4),
-              round(fresh * black_pct, 4),
+              round(eff_fresh, 4),
+              round(grey_added, 4),
+              round(black_added, 4),
               round(attrib, 2)))
-
-    total_grey  = sum(c[1] * c[2] for c in computed)
-    total_black = sum(c[1] * c[3] for c in computed)
 
     # ── Daily usage split across target days with per-day, per-activity drift
     # Each (activity × day) gets an independently drawn drift multiplier from
@@ -364,15 +400,15 @@ def compute_and_store(conn: sqlite3.Connection):
                 round(factor, 4),
             ))
 
-    # ── Section 5: Tank projections (use deterministic baseline totals)
+    # ── Section 5: Tank projections (use effective totals — adjusted for greywater recycling)
     def safe_days(numerator, rate):
         return (numerator / rate) if rate > 0 else math.inf
 
     def fmt(d):
         return round(d, 2) if d < math.inf else 9999.0
 
-    d_fresh = safe_days(cur_fresh,              total_fresh)
-    d_grey  = safe_days(grey_cap  - cur_grey,   total_grey)
+    d_fresh = safe_days(cur_fresh,              total_fresh_eff)
+    d_grey  = safe_days(grey_cap  - cur_grey,   total_grey_eff)
     d_black = safe_days(black_cap - cur_black,  total_black)
 
     def status_fresh(d):
@@ -391,9 +427,9 @@ def compute_and_store(conn: sqlite3.Connection):
           (tank, capacity_gal, current_gal, daily_delta_gal, days_remaining, status)
         VALUES (?,?,?,?,?,?)
     """, [
-        ("Fresh", fresh_cap, cur_fresh, -total_fresh,
+        ("Fresh", fresh_cap, cur_fresh, -total_fresh_eff,
          fmt(d_fresh), status_fresh(fmt(d_fresh))),
-        ("Grey",  grey_cap,  cur_grey,  +total_grey,
+        ("Grey",  grey_cap,  cur_grey,  +total_grey_eff,
          fmt(d_grey),  status_waste(fmt(d_grey))),
         ("Black", black_cap, cur_black, +total_black,
          fmt(d_black), status_waste(fmt(d_black))),
@@ -465,7 +501,7 @@ def print_results(conn: sqlite3.Connection, effs):
     print(f"  {'User Type':<12} {'Count':>6}  {'Shower':>8}  {'Sink':>8}  {'Toilet':>8}")
     print(f"  {'─'*50}")
     cur2 = conn.cursor()
-    cur2.execute("SELECT name, count FROM user_type WHERE is_child=0")
+    cur2.execute("SELECT name, count FROM user_type")  # include children
     count_map = {r[0]: r[1] for r in cur2.fetchall()}
     cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
     for ut, sh, sk, tl in cur.fetchall():

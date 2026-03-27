@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 import water_model
 
@@ -55,6 +55,13 @@ class UserTypeUpdate(BaseModel):
     count: int
     is_child: int = 0
 
+    @field_validator("count", "is_child", mode="before")
+    @classmethod
+    def empty_str_int_to_zero(cls, v):
+        if v == "" or v is None:
+            return 0
+        return v
+
 
 class TankEnvironmentUpdate(BaseModel):
     fresh_capacity_gal: float = 100
@@ -68,6 +75,7 @@ class TankEnvironmentUpdate(BaseModel):
     drift: float = 0.0          # NEW — 0 = deterministic, 1 = max normal drift
     drift_seed: int | None = None  # None = fresh random each run, int = locked seed
     alert_threshold: float = 0.10  # fraction; e.g. 0.10 = alert when usage >10% above baseline
+    greywater_recycle: int = 0  # 1 = redirect previous-day grey into toilet flushing
 
 
 class BehaviorMultiplierUpdate(BaseModel):
@@ -163,6 +171,7 @@ def get_inputs():
             "drift":                row["drift"],
             "drift_seed":           row["drift_seed"],
             "alert_threshold":      row["alert_threshold"],
+            "greywater_recycle":    row["greywater_recycle"],
         } if row else None
 
         cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
@@ -203,13 +212,13 @@ def put_inputs(payload: InputsUpdate):
                     fresh_capacity_gal = ?, grey_capacity_gal = ?, black_capacity_gal = ?,
                     current_fresh_gal = ?, current_grey_gal = ?, current_black_gal = ?,
                     climate_multiplier = ?, target_autonomy_days = ?, drift = ?, drift_seed = ?,
-                    alert_threshold = ?
+                    alert_threshold = ?, greywater_recycle = ?
                 WHERE id = 1
             """, (
                 t.fresh_capacity_gal, t.grey_capacity_gal, t.black_capacity_gal,
                 t.current_fresh_gal, t.current_grey_gal, t.current_black_gal,
                 t.climate_multiplier, t.target_autonomy_days, t.drift, t.drift_seed,
-                t.alert_threshold,
+                t.alert_threshold, t.greywater_recycle,
             ))
 
         if payload.behavior_multipliers is not None:
@@ -256,7 +265,7 @@ def get_results():
 
         cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
         mults = {r["user_type"]: r for r in cur.fetchall()}
-        cur.execute("SELECT name, count FROM user_type WHERE is_child = 0")
+        cur.execute("SELECT name, count FROM user_type")  # include children
         count_map = {r["name"]: r["count"] for r in cur.fetchall()}
         eff_shower = sum(count_map.get(ut, 0) * mults[ut]["shower_mult"] for ut in mults)
         eff_sink = sum(count_map.get(ut, 0) * mults[ut]["sink_mult"] for ut in mults)
@@ -278,12 +287,13 @@ def get_results():
         row = cur.fetchone()
         stability_score = dict(row) if row else None
 
-        # Drift value for display
-        cur.execute("SELECT target_autonomy_days, drift, drift_seed FROM tank_environment LIMIT 1")
+        # Environment values for display
+        cur.execute("SELECT target_autonomy_days, drift, drift_seed, greywater_recycle FROM tank_environment LIMIT 1")
         row_te = cur.fetchone()
-        target_days = int(row_te[0]) if row_te else 5
-        drift_val   = float(row_te[1]) if row_te else 0.0
-        seed_val    = row_te[2] if row_te else None
+        target_days        = int(row_te[0])   if row_te else 5
+        drift_val          = float(row_te[1]) if row_te else 0.0
+        seed_val           = row_te[2]        if row_te else None
+        greywater_recycle  = bool(row_te[3])  if row_te else False
 
         # Daily usage — pivot by activity + include drift_factor per day
         cur.execute("""
@@ -315,6 +325,7 @@ def get_results():
             "target_days": target_days,
             "drift": drift_val,
             "drift_seed": seed_val,
+            "greywater_recycle": greywater_recycle,
             "tank_projections": tank_projections,
             "stability_score": stability_score,
             "heat_ranges": heat_ranges,
@@ -365,18 +376,20 @@ def get_realtime():
 
         cur.execute("""
             SELECT target_autonomy_days, fresh_capacity_gal, grey_capacity_gal, black_capacity_gal,
-                   current_fresh_gal, current_grey_gal, current_black_gal, alert_threshold
+                   current_fresh_gal, current_grey_gal, current_black_gal, alert_threshold,
+                   greywater_recycle
             FROM tank_environment LIMIT 1
         """)
         row = cur.fetchone()
-        target_days = max(1, int(row[0])) if row else 5
-        fresh_cap = float(row[1]) if row else 100
-        grey_cap = float(row[2]) if row else 80
-        black_cap = float(row[3]) if row else 40
-        cur_fresh = float(row[4]) if row else 100
-        cur_grey = float(row[5]) if row else 0
-        cur_black = float(row[6]) if row else 0
+        target_days          = max(1, int(row[0])) if row else 5
+        fresh_cap            = float(row[1]) if row else 100
+        grey_cap             = float(row[2]) if row else 80
+        black_cap            = float(row[3]) if row else 40
+        cur_fresh            = float(row[4]) if row else 100
+        cur_grey             = float(row[5]) if row else 0
+        cur_black            = float(row[6]) if row else 0
         alert_threshold_frac = float(row[7]) if row and row[7] is not None else 0.10
+        greywater_recycle    = bool(row[8])  if row else False
 
         tank_capacities = {
             "fresh_gal": round(fresh_cap, 2),
@@ -429,17 +442,31 @@ def get_realtime():
         running_grey = cur_grey
         running_black = cur_black
 
+        # Pre-build per-day toilet fresh lookup for greywater recycling calculations
+        toilet_fresh_by_day = {
+            r["day_num"]: r["fresh_gal"]
+            for r in raw_rows if r["activity_name"] == "Toilet"
+        }
+
         # Per-day summaries, tank levels, and alerts (usage above baseline by alert_threshold fraction)
         threshold = 1.0 + alert_threshold_frac
         days = []
+        prev_day_grey_total = 0.0
         for day_num in range(1, target_days + 1):
             totals = _realtime_day_totals(raw_rows, day_num)
             activities = _realtime_day_activities(raw_rows, day_num)
 
-            # Apply day's usage: fresh decreases, grey/black increase; cap to capacity
-            running_fresh = _cap_fresh(running_fresh - totals["fresh_gal"])
-            running_grey = _cap_grey(running_grey + totals["grey_gal"])
+            # Greywater recycling: previous day's grey offsets toilet fresh draw on days 2+
+            grey_recycled = 0.0
+            if greywater_recycle and day_num > 1:
+                toilet_fresh_today = toilet_fresh_by_day.get(day_num, 0.0)
+                grey_recycled = min(toilet_fresh_today, prev_day_grey_total)
+
+            # Apply day's usage: fresh decreases (less if recycling), grey fills then drains by recycled amount
+            running_fresh = _cap_fresh(running_fresh - totals["fresh_gal"] + grey_recycled)
+            running_grey  = _cap_grey(running_grey  + totals["grey_gal"]   - grey_recycled)
             running_black = _cap_black(running_black + totals["black_gal"])
+            prev_day_grey_total = totals["grey_gal"]
             tank_levels = {
                 "fresh_gal": running_fresh,
                 "grey_gal": running_grey,
@@ -488,6 +515,7 @@ def get_realtime():
                 "alert_grey": alert_grey,
                 "alert_black": alert_black,
                 "alerts": alerts_list,
+                "grey_recycled_gal": round(grey_recycled, 2),
             })
     return {
         "target_days": target_days,
@@ -497,6 +525,7 @@ def get_realtime():
         "daily_usage_by_day": daily_usage_by_day,
         "heat_ranges": heat_ranges,
         "heat_groups": heat_groups,
+        "greywater_recycle": greywater_recycle,
     }
 
 
