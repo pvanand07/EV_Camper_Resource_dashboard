@@ -3,7 +3,7 @@ services:
     build: .
     image: ghcr.io/${GHCR_IMAGE:-local/ev-camper-api}:latest
     ports:
-      - "8000:8000"
+      - "20023:8000"
     environment:
       PYTHONUNBUFFERED: "1"
       WATER_INTELLIGENCE_DB: /data/water_intelligence.db
