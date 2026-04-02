@@ -1,2 +1,14 @@
 __pycache__/*
 
+# Docker volume (SQLite under ./data)
+data/
+
+# Local env / secrets (never commit)
+.env
+.env.local
+.env.*.local
+.env.secrets
+
+# Optional local SQLite at repo root (Docker uses ./data)
+water_intelligence.db
+

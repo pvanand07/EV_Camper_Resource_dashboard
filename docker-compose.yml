@@ -1,7 +1,14 @@
 services:
   api:
     build: .
+    image: ghcr.io/${GHCR_IMAGE:-local/ev-camper-api}:latest
     ports:
       - "8000:8000"
     environment:
-      - PYTHONUNBUFFERED=1
+      PYTHONUNBUFFERED: "1"
+      WATER_INTELLIGENCE_DB: /data/water_intelligence.db
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      OPENROUTER_KEY: ${OPENROUTER_KEY:-}
+      ANALYTICS_ADMIN_KEY: ${ANALYTICS_ADMIN_KEY:-}
+    volumes:
+      - ./data:/data

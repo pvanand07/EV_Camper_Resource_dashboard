@@ -14,7 +14,10 @@ import random
 if os.name == "nt" and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "water_intelligence.db")
+DB_PATH = os.environ.get(
+    "WATER_INTELLIGENCE_DB",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "water_intelligence.db"),
+)
 
 
 def create_db(conn: sqlite3.Connection):

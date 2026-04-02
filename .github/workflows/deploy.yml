@@ -1,0 +1,89 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image name
+        id: image
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: docker-compose.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Copy compose file
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: docker-compose.yml
+          target: /opt/apps/${{ github.event.repository.name }}
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1
+        env:
+          CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+          ANALYTICS_ADMIN_KEY: ${{ secrets.ANALYTICS_ADMIN_KEY }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: CORS_ORIGINS,OPENROUTER_KEY,ANALYTICS_ADMIN_KEY
+          script: |
+            APP_DIR="/opt/apps/${{ github.event.repository.name }}"
+            mkdir -p "$APP_DIR"
+            mkdir -p "$APP_DIR/data"
+            chmod 755 "$APP_DIR/data"
+            docker network create npm_network 2>/dev/null || true
+
+            # Write env file (GHCR_IMAGE must match ghcr.io push: owner/repo lowercase)
+            GHCR_IMAGE=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+            cat > "$APP_DIR/.env" <<EOF
+            GHCR_IMAGE=$GHCR_IMAGE
+            CORS_ORIGINS=$CORS_ORIGINS
+            OPENROUTER_KEY=$OPENROUTER_KEY
+            ANALYTICS_ADMIN_KEY=$ANALYTICS_ADMIN_KEY
+            EOF
+
+            cd "$APP_DIR"
+            echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull
+            docker compose up -d --wait --wait-timeout 60
+            docker image prune -f

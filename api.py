@@ -3,6 +3,7 @@ FastAPI backend for Water Intelligence Engine v2.
 Exposes editable inputs and computed results.
 """
 
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -20,7 +21,21 @@ app = FastAPI(title="Water Intelligence Engine v2 API")
 @app.get("/")
 def index():
     return FileResponse(Path(__file__).parent / "index.html")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+def _cors_allow_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "").strip()
+    if not raw:
+        return ["*"]
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_allow_origins(),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @contextmanager
