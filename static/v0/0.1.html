@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>≡ƒÆº Water Intelligence Engine v2</title>
+  <title>💧 Water Intelligence Engine v2</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,9 +115,9 @@
     .stay-hint { font-size: 0.7rem; opacity: 0.7; margin-top: 0.15rem; }
     .drift-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: var(--warning); margin-left: 0.5rem; }
 
-    /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    /* ═══════════════════════════════════════════════════
        HEATMAP
-    ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+    ═══════════════════════════════════════════════════ */
     .stream-toggle { display: flex; gap: 0.3rem; margin-bottom: 1.1rem; }
     .stream-btn { padding: 0.32rem 0.85rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: all 0.18s; font-family: 'Outfit', sans-serif; }
     .stream-btn:hover { border-color: var(--accent-dim); color: var(--text); }
@@ -203,8 +203,8 @@
       <span class="version-badge">v0.1 (archived)</span>
       <a href="/" class="version-link">← Back to latest</a>
     </div>
-    <h1>≡ƒÆº Water Intelligence Engine v2</h1>
-    <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.25rem;">Unified architecture ΓÇö edit inputs, view computed results</p>
+    <h1>💧 Water Intelligence Engine v2</h1>
+    <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.25rem;">Unified architecture — edit inputs, view computed results</p>
   </header>
 
   <div class="tabs">
@@ -213,11 +213,11 @@
     <button class="tab" :class="{ active: tab==='realtime' }" @click="tab='realtime'; loadRealtime()">Realtime</button>
   </div>
 
-  <!-- ΓòÉΓòÉΓòÉ INPUT TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+  <!-- ═══ INPUT TAB ════════════════════════════════════════ -->
   <div class="panel" :class="{ active: tab==='input' }">
 
     <div class="section" v-if="inputs">
-      <h2>≡ƒôï Section 1 ΓÇö People Inputs <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
+      <h2>📋 Section 1 — People Inputs <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
       <div class="form-grid">
         <div class="form-row" v-for="u in inputs.user_types" :key="u.name+u.is_child">
           <label>{{ u.name }}<span v-if="u.is_child"> (children)</span></label>
@@ -228,7 +228,7 @@
     </div>
 
     <div class="section" v-if="inputs?.tank_environment">
-      <h2>≡ƒ¢ó∩╕Å Section 2 ΓÇö Tank & Environment</h2>
+      <h2>🛢️ Section 2 — Tank & Environment</h2>
       <div class="form-grid">
         <div class="form-row"><label>Fresh Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" /></div>
         <div class="form-row"><label>Grey Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" /></div>
@@ -236,33 +236,33 @@
         <div class="form-row"><label>Current Fresh Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" /></div>
         <div class="form-row"><label>Current Grey Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" /></div>
         <div class="form-row"><label>Current Black Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" /></div>
-        <div class="form-row"><label>Climate Multiplier (├ù)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
+        <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
         <div class="form-row"><label>Target Autonomy Days</label><input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" /></div>
         <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
         <div class="drift-row">
           <div class="drift-top">
             <div>
-              <div class="drift-label">≡ƒÄ▓ Behavioral Drift</div>
-              <div class="drift-desc">Models day-to-day unpredictability via N(1.0, ╧â=drift/2) clipped to [1ΓêÆdrift, 1+drift].</div>
+              <div class="drift-label">🎲 Behavioral Drift</div>
+              <div class="drift-desc">Models day-to-day unpredictability via N(1.0, σ=drift/2) clipped to [1−drift, 1+drift].</div>
             </div>
             <div class="drift-value-badge">{{ driftPct }}</div>
           </div>
           <div class="drift-range-row">
-            <span>0 ΓÇö none</span>
+            <span>0 — none</span>
             <input type="range" min="0" max="1" step="0.01" v-model.number="inputs.tank_environment.drift" :style="{'--drift-pct': inputs.tank_environment.drift*100}" />
-            <span>1 ΓÇö max</span>
+            <span>1 — max</span>
           </div>
           <div class="drift-band-label" v-if="inputs.tank_environment.drift > 0">
             Draw from <span>N(1.0, {{ driftSd }})</span> clipped to <span>[{{ driftLo }}, {{ driftHi }}]</span>
           </div>
-          <div class="drift-band-label" v-else style="color:#475569;">Drift = 0 ΓÇö all days use exact baseline (deterministic)</div>
+          <div class="drift-band-label" v-else style="color:#475569;">Drift = 0 — all days use exact baseline (deterministic)</div>
           <div class="seed-row" v-if="inputs.tank_environment.drift > 0">
-            <label class="seed-label">≡ƒöÆ Random Seed <span class="seed-hint">integer = locked &amp; reproducible &nbsp;|&nbsp; blank = fresh random each run</span></label>
+            <label class="seed-label">🔒 Random Seed <span class="seed-hint">integer = locked &amp; reproducible &nbsp;|&nbsp; blank = fresh random each run</span></label>
             <div class="seed-input-wrap">
               <input type="number" step="1" min="0" class="seed-input" :value="inputs.tank_environment.drift_seed ?? ''" @input="onSeedInput($event)" placeholder="e.g. 42" />
-              <button class="seed-clear" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined" @click="inputs.tank_environment.drift_seed = null">Γ£ò</button>
-              <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">≡ƒöÆ locked</span>
-              <span class="seed-status unlocked" v-else>≡ƒÄ▓ random</span>
+              <button class="seed-clear" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined" @click="inputs.tank_environment.drift_seed = null">✕</button>
+              <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">🔒 locked</span>
+              <span class="seed-status unlocked" v-else>🎲 random</span>
             </div>
           </div>
         </div>
@@ -270,12 +270,12 @@
         <!-- Greywater Recycling toggle -->
         <div class="greywater-row" :class="{ active: greywaterRecycle }">
           <div class="greywater-info">
-            <div class="greywater-label">ΓÖ╗∩╕Å Greywater Recycling</div>
+            <div class="greywater-label">♻️ Greywater Recycling</div>
             <div class="greywater-desc">
               Accumulated grey water from the previous day (shower, sinks) is redirected to toilet flushing, reducing fresh water consumption.
             </div>
             <div class="greywater-savings" v-if="greywaterRecycle">
-              See Results ΓåÆ Tank Projections for the impact on fresh &amp; grey autonomy days.
+              See Results → Tank Projections for the impact on fresh &amp; grey autonomy days.
             </div>
           </div>
           <label class="toggle" title="Toggle greywater recycling">
@@ -288,7 +288,7 @@
     </div>
 
     <div class="section" v-if="inputs?.behavior_multipliers">
-      <h2>≡ƒºá Section 3 ΓÇö Behavior Multipliers</h2>
+      <h2>🧠 Section 3 — Behavior Multipliers</h2>
       <table>
         <thead><tr><th>User Type</th><th>Count</th><th>Shower Mult</th><th>Sink Mult</th><th>Toilet Mult</th></tr></thead>
         <tbody>
@@ -303,16 +303,16 @@
     </div>
 
     <div class="section" v-if="inputs?.activities">
-      <h2>ΓÜí Section 4 ΓÇö Activity Engine</h2>
+      <h2>⚡ Section 4 — Activity Engine</h2>
       <table>
         <thead><tr><th>Activity</th><th>Flow (gal/min)</th><th>Duration (min)</th><th>Events/Day</th><th>Gal/Unit</th><th>Grey Bool</th><th>Black Bool</th></tr></thead>
         <tbody>
           <tr v-for="a in inputs.activities" :key="a.id">
             <td>{{ a.name }}</td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="ΓÇö" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="ΓÇö" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="ΓÇö" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="ΓÇö" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" /></td>
             <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.grey_pct" /></td>
             <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.black_pct" /></td>
           </tr>
@@ -326,12 +326,12 @@
     </div>
   </div>
 
-  <!-- ΓòÉΓòÉΓòÉ RESULTS TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+  <!-- ═══ RESULTS TAB ════════════════════════════════════════ -->
   <div class="panel" :class="{ active: tab==='results' }">
 
     <!-- Water resource -->
     <div class="section" v-if="results?.stability_score">
-      <h2>≡ƒÆº Water Resource</h2>
+      <h2>💧 Water Resource</h2>
       <div class="stability-card">
         <div class="stability-item limiting-factor">
           <div class="label">Limiting Factor</div>
@@ -343,14 +343,14 @@
         <div class="stability-item target-days"><div class="label">Target Stay</div><div class="value">{{ results.stability_score.target_days }} <span style="font-size:0.7rem;font-weight:400;opacity:0.6;">days</span></div></div>
       </div>
       <div v-if="results?.stay_supported === false" class="stay-indicator not-supported">
-        <span>ΓÜá∩╕Å</span>
+        <span>⚠️</span>
         <div>
           <div>Your current stay of {{ results.stability_score.target_days }} days is not supported by available water</div>
           <div class="stay-hint">(according to usage assumptions)</div>
         </div>
       </div>
       <div v-else-if="results?.stay_supported === true" class="stay-indicator supported">
-        <span>Γ£ô</span>
+        <span>✓</span>
         <div>
           <div>Your stay of {{ results.stability_score.target_days }} days is supported by available water</div>
           <div class="stay-hint">(according to usage assumptions)</div>
@@ -361,8 +361,8 @@
     <!-- Tank projections -->
     <div class="section" v-if="results?.tank_projections?.length">
       <h2>
-        ≡ƒöï Tank Projections <span class="badge">based on deterministic baseline</span>
-        <span class="grey-chip" v-if="results.greywater_recycle">ΓÖ╗∩╕Å greywater recycling on</span>
+        🔋 Tank Projections <span class="badge">based on deterministic baseline</span>
+        <span class="grey-chip" v-if="results.greywater_recycle">♻️ greywater recycling on</span>
       </h2>
       <table class="results-table">
         <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily ╬ö</th><th>Days Left</th><th>Status</th></tr></thead>
@@ -372,7 +372,7 @@
             <td>{{ t.capacity_gal?.toFixed(1) }}</td>
             <td>{{ t.current_gal?.toFixed(1) }}</td>
             <td>{{ t.daily_delta_gal > 0 ? '+' : '' }}{{ t.daily_delta_gal?.toFixed(2) }}</td>
-            <td>{{ t.days_remaining >= 9999 ? 'Γê₧' : t.days_remaining?.toFixed(2) }}</td>
+            <td>{{ t.days_remaining >= 9999 ? '∞' : t.days_remaining?.toFixed(2) }}</td>
             <td :class="statusClass(t.status)">{{ t.status }}</td>
           </tr>
         </tbody>
@@ -381,7 +381,7 @@
 
     <!-- Activity baseline -->
     <div class="section" v-if="results?.activity_results?.length">
-      <h2>ΓÜí Activity Engine ΓÇö Daily Baseline</h2>
+      <h2>⚡ Activity Engine — Daily Baseline</h2>
       <table class="results-table">
         <thead><tr><th>Activity</th><th>Fresh/day</th><th>Grey/day</th><th>Black/day</th><th>Attrib %</th></tr></thead>
         <tbody>
@@ -403,21 +403,21 @@
       </table>
     </div>
 
-    <!-- ΓöÇΓöÇ HEATMAP ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ -->
+    <!-- ── HEATMAP ──────────────────────────────────────────── -->
     <div class="section" v-if="results?.daily_usage_by_day?.length">
       <h2>
-        ≡ƒôà Daily Usage Heatmap
+        📅 Daily Usage Heatmap
         <span class="drift-chip" v-if="results.drift > 0">
-          ≡ƒÄ▓ drift {{ results.drift?.toFixed(2) }}
-          <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">&nbsp;≡ƒöÆ seed {{ results.drift_seed }}</template>
-          <template v-else>&nbsp;≡ƒÄ▓ random</template>
+          🎲 drift {{ results.drift?.toFixed(2) }}
+          <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">&nbsp;🔒 seed {{ results.drift_seed }}</template>
+          <template v-else>&nbsp;🎲 random</template>
         </span>
       </h2>
 
       <div class="stream-toggle">
-        <button class="stream-btn" :class="{'active-fresh': heatStream==='fresh'}" @click="heatStream='fresh'">≡ƒÆº Fresh</button>
-        <button class="stream-btn" :class="{'active-grey':  heatStream==='grey'}"  @click="heatStream='grey'">≡ƒ¬ú Grey</button>
-        <button class="stream-btn" :class="{'active-black': heatStream==='black'}" @click="heatStream='black'">≡ƒÜ╜ Black</button>
+        <button class="stream-btn" :class="{'active-fresh': heatStream==='fresh'}" @click="heatStream='fresh'">💧 Fresh</button>
+        <button class="stream-btn" :class="{'active-grey':  heatStream==='grey'}"  @click="heatStream='grey'">🪣 Grey</button>
+        <button class="stream-btn" :class="{'active-black': heatStream==='black'}" @click="heatStream='black'">🚽 Black</button>
       </div>
 
       <div class="heatmap-wrap">
@@ -440,7 +440,7 @@
                 <td class="heat-td" v-for="d in heatDayNums" :key="d">
                   <div class="heat-cell" :style="cellStyle(row, d)" :title="cellTitle(row, d)">
                     <span class="cv">{{ cellVal(row, d) }}</span>
-                    <span class="cf" v-if="results.drift > 0 && row[`factor_${d}`] !== undefined">├ù{{ row[`factor_${d}`]?.toFixed(2) }}</span>
+                    <span class="cf" v-if="results.drift > 0 && row[`factor_${d}`] !== undefined">×{{ row[`factor_${d}`]?.toFixed(2) }}</span>
                   </div>
                 </td>
               </tr>
@@ -452,7 +452,7 @@
       <div class="heatmap-footer">
         <span class="heatmap-unit-note">Values in gal/day (normalised per stream)</span>
         <div class="drift-note" v-if="results.drift > 0">
-          ├ùfactor below value = drift draw &nbsp;┬╖&nbsp; amber border = above baseline, cyan = below
+          ×factor below value = drift draw &nbsp;·&nbsp; amber border = above baseline, cyan = below
         </div>
       </div>
     </div>
@@ -462,12 +462,12 @@
     </div>
   </div>
 
-  <!-- ΓòÉΓòÉΓòÉ REALTIME TAB ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+  <!-- ═══ REALTIME TAB ════════════════════════════════════════ -->
   <div class="panel" :class="{ active: tab==='realtime' }">
     <div class="section" v-if="realtime">
       <h2>
-        ≡ƒôí Realtime ΓÇö Day view
-        <span class="grey-chip" v-if="realtime.greywater_recycle">ΓÖ╗∩╕Å greywater recycling on</span>
+        📡 Realtime — Day view
+        <span class="grey-chip" v-if="realtime.greywater_recycle">♻️ greywater recycling on</span>
       </h2>
       <div class="day-switcher">
         <button
@@ -484,7 +484,7 @@
         :key="item.stream"
         class="realtime-alert"
       >
-        <span class="realtime-alert-icon">ΓÜá∩╕Å</span>
+        <span class="realtime-alert-icon">⚠️</span>
         <span>{{ item.message }}</span>
       </div>
 
@@ -492,20 +492,20 @@
         <div :key="'day-' + realtimeDay">
         <h3 class="realtime-h3">Tank levels (end of day, capped at capacity)</h3>
         <div class="realtime-stats" v-if="currentDayData?.tank_levels && realtime?.tank_capacities">
-          <div class="realtime-stat"><span class="label">≡ƒÆº Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
-          <div class="realtime-stat"><span class="label">≡ƒ¬ú Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
-          <div class="realtime-stat"><span class="label">≡ƒÜ╜ Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">💧 Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🪣 Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🚽 Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
           <div class="realtime-stat" v-if="realtime.greywater_recycle && realtimeDay > 1 && currentDayData.grey_recycled_gal > 0" style="border-color:rgba(52,211,153,0.35);">
-            <span class="label" style="color:#34d399;">ΓÖ╗∩╕Å Grey recycled</span>
-            <span class="value" style="color:#34d399;">{{ currentDayData.grey_recycled_gal?.toFixed(2) }} gal ΓåÆ toilet</span>
+            <span class="label" style="color:#34d399;">♻️ Grey recycled</span>
+            <span class="value" style="color:#34d399;">{{ currentDayData.grey_recycled_gal?.toFixed(2) }} gal → toilet</span>
           </div>
         </div>
 
         <h3 class="realtime-h3">Total usage today (Day {{ realtimeDay }})</h3>
         <div class="realtime-stats">
-          <div class="realtime-stat"><span class="label">≡ƒÆº Fresh</span><span class="value">{{ currentDayData.stats.fresh_gal?.toFixed(2) }} gal</span></div>
-          <div class="realtime-stat"><span class="label">≡ƒ¬ú Grey</span><span class="value">{{ currentDayData.stats.grey_gal?.toFixed(2) }} gal</span></div>
-          <div class="realtime-stat"><span class="label">≡ƒÜ╜ Black</span><span class="value">{{ currentDayData.stats.black_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">💧 Fresh</span><span class="value">{{ currentDayData.stats.fresh_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🪣 Grey</span><span class="value">{{ currentDayData.stats.grey_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">🚽 Black</span><span class="value">{{ currentDayData.stats.black_gal?.toFixed(2) }} gal</span></div>
           <div class="realtime-stat baseline"><span class="label">Baseline (daily)</span><span class="value">{{ currentDayData.baseline?.fresh_gal?.toFixed(2) }} / {{ currentDayData.baseline?.grey_gal?.toFixed(2) }} / {{ currentDayData.baseline?.black_gal?.toFixed(2) }} gal</span></div>
         </div>
 
@@ -528,7 +528,7 @@
                   <td class="heat-td" v-for="col in realtimeStreamCols" :key="col.streamKey">
                     <div class="heat-cell" :style="realtimeCellStyleForStream(row, col.streamKey)" :title="realtimeCellTitleForStream(row, col.streamKey)">
                       <span class="cv">{{ realtimeCellValForStream(row, col.streamKey) }}</span>
-                      <span class="cf" v-if="row['factor_'+realtimeDay] !== undefined">├ù{{ row['factor_'+realtimeDay]?.toFixed(2) }}</span>
+                      <span class="cf" v-if="row['factor_'+realtimeDay] !== undefined">×{{ row['factor_'+realtimeDay]?.toFixed(2) }}</span>
                     </div>
                   </td>
                 </tr>
@@ -549,7 +549,7 @@
 const { createApp, nextTick } = Vue;
 const API = '/api';
 
-// ΓöÇΓöÇ Uniform readable colours: same rendering as fresh for all streams ΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Uniform readable colours: same rendering as fresh for all streams ─────
 const FRESH_STYLE = { bg: 'rgba(34,211,238,0.12)', color: '#e0f2fe', border: '1px solid rgba(34,211,238,0.25)' };
 function streamStyle(stream) {
   return FRESH_STYLE;
@@ -626,9 +626,9 @@ createApp({
     },
     realtimeStreamCols() {
       return [
-        { streamKey: 'fresh', label: '≡ƒÆº Fresh' },
-        { streamKey: 'grey', label: '≡ƒ¬ú Grey' },
-        { streamKey: 'back', label: '≡ƒÜ╜ Black' },
+        { streamKey: 'fresh', label: '💧 Fresh' },
+        { streamKey: 'grey', label: '🪣 Grey' },
+        { streamKey: 'back', label: '🚽 Black' },
       ];
     },
     realtimeStreamKey() {
@@ -715,13 +715,13 @@ createApp({
     },
     statusClass(s) {
       if (!s) return '';
-      if (s === 'Γ£ô') return 'status-tick';
+      if (s === '✓') return 'status-tick';
       if (s.includes('Full Autonomy')) return 'status-ok';
       if (s.includes('Low')||s.includes('Full')||s.includes('Good')||s.includes('Marginal')) return 'status-warn';
       return 'status-bad';
     },
 
-    // ΓöÇΓöÇ Heatmap ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Heatmap ─────────────────────────────────────────────
     norm(row, d) {
       const v=row[`${this.streamKey}_${d}`]??0, {min,max}=this.heatRange;
       return Math.max(0,Math.min(1,(v-min)/(max-min)));
@@ -743,11 +743,11 @@ createApp({
     },
     cellVal(row, d) {
       const v = row[`${this.streamKey}_${d}`];
-      return v != null ? v.toFixed(2) : 'ΓÇö';
+      return v != null ? v.toFixed(2) : '—';
     },
     cellTitle(row, d) {
       const v=row[`${this.streamKey}_${d}`], f=row[`factor_${d}`];
-      return `${row.activity} ┬╖ Day ${d} ┬╖ ${this.heatStream}: ${v?.toFixed(3)} gal`+(f!=null?`  (├ù${f.toFixed(4)})`:'');
+      return `${row.activity} · Day ${d} · ${this.heatStream}: ${v?.toFixed(3)} gal`+(f!=null?`  (×${f.toFixed(4)})`:'');
     },
 
     drawScale() { /* no gradient; uniform colours */ },
@@ -795,13 +795,13 @@ createApp({
     },
     realtimeCellValForStream(row, streamKey) {
       const v = row[streamKey + '_' + this.realtimeDay];
-      return v != null ? v.toFixed(2) : 'ΓÇö';
+      return v != null ? v.toFixed(2) : '—';
     },
     realtimeCellTitleForStream(row, streamKey) {
       const v = row[streamKey + '_' + this.realtimeDay];
       const f = row['factor_' + this.realtimeDay];
       const streamLabel = streamKey === 'back' ? 'Black' : (streamKey === 'fresh' ? 'Fresh' : 'Grey');
-      return row.activity + ' ┬╖ Day ' + this.realtimeDay + ' ┬╖ ' + streamLabel + ': ' + (v?.toFixed(3) ?? 'ΓÇö') + ' gal' + (f != null ? ' (├ù' + f.toFixed(4) + ')' : '');
+      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + streamLabel + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
     },
     realtimeNorm(row) {
       const d = this.realtimeDay;
@@ -826,12 +826,12 @@ createApp({
     },
     realtimeCellVal(row) {
       const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
-      return v != null ? v.toFixed(2) : 'ΓÇö';
+      return v != null ? v.toFixed(2) : '—';
     },
     realtimeCellTitle(row) {
       const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
       const f = row['factor_' + this.realtimeDay];
-      return row.activity + ' ┬╖ Day ' + this.realtimeDay + ' ┬╖ ' + this.realtimeHeatStream + ': ' + (v?.toFixed(3) ?? 'ΓÇö') + ' gal' + (f != null ? ' (├ù' + f.toFixed(4) + ')' : '');
+      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + this.realtimeHeatStream + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
     },
     drawRealtimeScale() { /* no gradient; uniform colours */ },
   },
