@@ -11,11 +11,15 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
 import water_model
 
 app = FastAPI(title="Water Intelligence Engine v2 API")
+
+# Mount static files for versioned HTML
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/")
