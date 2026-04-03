@@ -92,10 +92,22 @@
     .status-tick { color: var(--text-muted); }
     .status-warn { color: var(--warning); }
     .status-bad { color: var(--danger); }
-    .stability-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .stability-card { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem; }
+    @media (max-width: 500px) { .stability-card { grid-template-columns: 1fr; } }
     .stability-item { background: var(--bg-input); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); }
-    .stability-item .label { font-size: 0.8rem; color: var(--text-muted); }
-    .stability-item .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
+    .stability-item .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .stability-item .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.35rem; }
+    .stability-item.limiting-factor { border-color: var(--warning); background: rgba(251,191,36,0.08); }
+    .stability-item.limiting-factor .value { display: flex; flex-direction: row; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+    .stability-item.limiting-factor .tank-name { color: var(--warning); font-size: 0.95rem; }
+    .stability-item.limiting-factor .days-remaining { color: var(--text); font-size: 1.3rem; }
+    .stability-item.target-days { text-align: center; }
+    .stability-item.target-days .value { font-size: 1.5rem; color: var(--accent); }
+    .stay-indicator { margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: 8px; font-size: 0.9rem; display: flex; align-items: flex-start; gap: 0.5rem; }
+    .stay-indicator.supported { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+    .stay-indicator.not-supported { background: rgba(248,113,113,0.12); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+    .stay-indicator > span:first-child { font-size: 1.1rem; line-height: 1.3; }
+    .stay-hint { font-size: 0.7rem; opacity: 0.7; margin-top: 0.15rem; }
     .drift-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: var(--warning); margin-left: 0.5rem; }
 
     /* ═══════════════════════════════════════════════════
@@ -308,14 +320,78 @@
   <!-- ═══ RESULTS TAB ════════════════════════════════════════ -->
   <div class="panel" :class="{ active: tab==='results' }">
 
-    <!-- Effective multipliers -->
-    <div class="section" v-if="results">
-      <h2>🧠 Effective Multipliers (SUMPRODUCT)</h2>
-      <div class="form-grid">
-        <div class="form-row"><label>Shower</label><input type="text" :value="results.effective_multipliers?.shower?.toFixed(2)" readonly /></div>
-        <div class="form-row"><label>Sink</label><input type="text" :value="results.effective_multipliers?.sink?.toFixed(2)" readonly /></div>
-        <div class="form-row"><label>Toilet</label><input type="text" :value="results.effective_multipliers?.toilet?.toFixed(2)" readonly /></div>
+    <!-- Water resource -->
+    <div class="section" v-if="results?.stability_score">
+      <h2>💧 Water Resource</h2>
+      <div class="stability-card">
+        <div class="stability-item limiting-factor">
+          <div class="label">Limiting Factor</div>
+          <div class="value">
+            <span class="tank-name">{{ results.stability_score.limiting_tank }} Tank</span>
+            <span class="days-remaining">{{ results.stability_score.limiting_days?.toFixed(2) }} days</span>
+          </div>
+        </div>
+        <div class="stability-item target-days"><div class="label">Target Stay</div><div class="value">{{ results.stability_score.target_days }} <span style="font-size:0.7rem;font-weight:400;opacity:0.6;">days</span></div></div>
       </div>
+      <div v-if="results?.stay_supported === false" class="stay-indicator not-supported">
+        <span>⚠️</span>
+        <div>
+          <div>Your current stay of {{ results.stability_score.target_days }} days is not supported by available water</div>
+          <div class="stay-hint">(according to usage assumptions)</div>
+        </div>
+      </div>
+      <div v-else-if="results?.stay_supported === true" class="stay-indicator supported">
+        <span>✓</span>
+        <div>
+          <div>Your stay of {{ results.stability_score.target_days }} days is supported by available water</div>
+          <div class="stay-hint">(according to usage assumptions)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tank projections -->
+    <div class="section" v-if="results?.tank_projections?.length">
+      <h2>
+        🔋 Tank Projections <span class="badge">based on deterministic baseline</span>
+        <span class="grey-chip" v-if="results.greywater_recycle">♻️ greywater recycling on</span>
+      </h2>
+      <table class="results-table">
+        <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Days Left</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr v-for="t in results.tank_projections" :key="t.tank">
+            <td>{{ t.tank }}</td>
+            <td>{{ t.capacity_gal?.toFixed(1) }}</td>
+            <td>{{ t.current_gal?.toFixed(1) }}</td>
+            <td>{{ t.daily_delta_gal > 0 ? '+' : '' }}{{ t.daily_delta_gal?.toFixed(2) }}</td>
+            <td>{{ t.days_remaining >= 9999 ? '∞' : t.days_remaining?.toFixed(2) }}</td>
+            <td :class="statusClass(t.status)">{{ t.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Activity baseline -->
+    <div class="section" v-if="results?.activity_results?.length">
+      <h2>⚡ Activity Engine — Daily Baseline</h2>
+      <table class="results-table">
+        <thead><tr><th>Activity</th><th>Fresh/day</th><th>Grey/day</th><th>Black/day</th><th>Attrib %</th></tr></thead>
+        <tbody>
+          <tr v-for="r in results.activity_results" :key="r.activity_name">
+            <td>{{ r.activity_name }}</td>
+            <td>{{ r.daily_fresh_gal?.toFixed(2) }}</td>
+            <td>{{ r.grey_added_gal?.toFixed(2) }}</td>
+            <td>{{ r.black_added_gal?.toFixed(2) }}</td>
+            <td>{{ r.fresh_attrib_pct?.toFixed(1) }}%</td>
+          </tr>
+          <tr style="font-weight:600;border-top:2px solid var(--border);">
+            <td>TOTAL</td>
+            <td>{{ totalFresh?.toFixed(2) }}</td>
+            <td>{{ totalGrey?.toFixed(2) }}</td>
+            <td>{{ totalBlack?.toFixed(2) }}</td>
+            <td>100%</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- ── HEATMAP ──────────────────────────────────────────── -->
@@ -369,63 +445,6 @@
         <div class="drift-note" v-if="results.drift > 0">
           ×factor below value = drift draw &nbsp;·&nbsp; amber border = above baseline, cyan = below
         </div>
-      </div>
-    </div>
-
-    <!-- Activity baseline -->
-    <div class="section" v-if="results?.activity_results?.length">
-      <h2>⚡ Activity Engine — Daily Baseline</h2>
-      <table class="results-table">
-        <thead><tr><th>Activity</th><th>Fresh/day</th><th>Grey/day</th><th>Black/day</th><th>Attrib %</th></tr></thead>
-        <tbody>
-          <tr v-for="r in results.activity_results" :key="r.activity_name">
-            <td>{{ r.activity_name }}</td>
-            <td>{{ r.daily_fresh_gal?.toFixed(2) }}</td>
-            <td>{{ r.grey_added_gal?.toFixed(2) }}</td>
-            <td>{{ r.black_added_gal?.toFixed(2) }}</td>
-            <td>{{ r.fresh_attrib_pct?.toFixed(1) }}%</td>
-          </tr>
-          <tr style="font-weight:600;border-top:2px solid var(--border);">
-            <td>TOTAL</td>
-            <td>{{ totalFresh?.toFixed(2) }}</td>
-            <td>{{ totalGrey?.toFixed(2) }}</td>
-            <td>{{ totalBlack?.toFixed(2) }}</td>
-            <td>100%</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Tank projections -->
-    <div class="section" v-if="results?.tank_projections?.length">
-      <h2>
-        🔋 Tank Projections <span class="badge">based on deterministic baseline</span>
-        <span class="grey-chip" v-if="results.greywater_recycle">♻️ greywater recycling on</span>
-      </h2>
-      <table class="results-table">
-        <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Days Left</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr v-for="t in results.tank_projections" :key="t.tank">
-            <td>{{ t.tank }}</td>
-            <td>{{ t.capacity_gal?.toFixed(1) }}</td>
-            <td>{{ t.current_gal?.toFixed(1) }}</td>
-            <td>{{ t.daily_delta_gal > 0 ? '+' : '' }}{{ t.daily_delta_gal?.toFixed(2) }}</td>
-            <td>{{ t.days_remaining >= 9999 ? '∞' : t.days_remaining?.toFixed(2) }}</td>
-            <td :class="statusClass(t.status)">{{ t.status }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Stability score -->
-    <div class="section" v-if="results?.stability_score">
-      <h2>🎯 Stability Score</h2>
-      <div class="stability-card">
-        <div class="stability-item"><div class="label">Limiting Tank</div><div class="value">{{ results.stability_score.limiting_tank }}</div></div>
-        <div class="stability-item"><div class="label">Limiting Days</div><div class="value">{{ results.stability_score.limiting_days?.toFixed(2) }} days</div></div>
-        <div class="stability-item"><div class="label">Target Days</div><div class="value">{{ results.stability_score.target_days }}</div></div>
-        <div class="stability-item"><div class="label">Score</div><div class="value">{{ results.stability_score.score_pct?.toFixed(1) }} / 100</div></div>
-        <div class="stability-item"><div class="label">Rating</div><div class="value" :class="statusClass(results.stability_score.rating)">{{ results.stability_score.rating }}</div></div>
       </div>
     </div>
 

@@ -278,14 +278,6 @@ def get_results():
         water_model.compute_and_store(conn)
         cur = conn.cursor()
 
-        cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
-        mults = {r["user_type"]: r for r in cur.fetchall()}
-        cur.execute("SELECT name, count FROM user_type")  # include children
-        count_map = {r["name"]: r["count"] for r in cur.fetchall()}
-        eff_shower = sum(count_map.get(ut, 0) * mults[ut]["shower_mult"] for ut in mults)
-        eff_sink = sum(count_map.get(ut, 0) * mults[ut]["sink_mult"] for ut in mults)
-        eff_toilet = sum(count_map.get(ut, 0) * mults[ut]["toilet_mult"] for ut in mults)
-
         cur.execute("""
             SELECT activity_name, daily_fresh_gal, grey_added_gal, black_added_gal, fresh_attrib_pct
             FROM activity_result
@@ -333,8 +325,11 @@ def get_results():
         heat_ranges = _heatmap_ranges(daily_usage_by_day, target_days)
         heat_groups = _heatmap_groups(daily_usage_by_day)
 
+        # Calculate stay_supported based on projected limiting days vs target
+        limiting_days = stability_score.get("limiting_days") if stability_score else None
+        stay_supported = limiting_days is not None and limiting_days >= target_days
+
         return {
-            "effective_multipliers": {"shower": eff_shower, "sink": eff_sink, "toilet": eff_toilet},
             "activity_results": activity_results,
             "daily_usage_by_day": daily_usage_by_day,
             "target_days": target_days,
@@ -345,6 +340,7 @@ def get_results():
             "stability_score": stability_score,
             "heat_ranges": heat_ranges,
             "heat_groups": heat_groups,
+            "stay_supported": stay_supported,
         }
 
 
