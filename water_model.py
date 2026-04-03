@@ -124,7 +124,10 @@ def create_db(conn: sqlite3.Connection):
         limiting_days  REAL NOT NULL,
         target_days    REAL NOT NULL,
         score_pct      REAL NOT NULL,
-        rating         TEXT NOT NULL
+        rating         TEXT NOT NULL,
+        fresh_days     REAL NOT NULL DEFAULT 0,
+        grey_days      REAL NOT NULL DEFAULT 0,
+        black_days     REAL NOT NULL DEFAULT 0
     );
     """)
     conn.commit()
@@ -228,6 +231,13 @@ def _migrate(conn: sqlite3.Connection):
         cur.execute("ALTER TABLE tank_environment ADD COLUMN greywater_recycle INTEGER NOT NULL DEFAULT 0")
     except sqlite3.OperationalError:
         pass  # already exists
+
+    # stability_score table: add fresh_days, grey_days, black_days columns
+    for col in ["fresh_days", "grey_days", "black_days"]:
+        try:
+            cur.execute(f"ALTER TABLE stability_score ADD COLUMN {col} REAL NOT NULL DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass  # already exists
 
     # Children behavior multipliers — add if missing (existing DBs pre-date this feature)
     cur.execute("INSERT OR IGNORE INTO behavior_multiplier (user_type, shower_mult, sink_mult, toilet_mult) VALUES (?,?,?,?)",
@@ -454,9 +464,10 @@ def compute_and_store(conn: sqlite3.Connection):
     cur.execute("DELETE FROM stability_score")
     cur.execute("""
         INSERT INTO stability_score
-          (limiting_tank, limiting_days, target_days, score_pct, rating)
-        VALUES (?,?,?,?,?)
-    """, (limiting, round(min_days, 2), target_days, round(score, 1), rating))
+          (limiting_tank, limiting_days, target_days, score_pct, rating, fresh_days, grey_days, black_days)
+        VALUES (?,?,?,?,?,?,?,?)
+    """, (limiting, round(min_days, 2), target_days, round(score, 1), rating,
+          round(fmt(d_fresh), 2), round(fmt(d_grey), 2), round(fmt(d_black), 2)))
 
     conn.commit()
     return eff_shower, eff_sink, eff_toilet
