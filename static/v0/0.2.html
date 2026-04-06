@@ -526,7 +526,7 @@
         <div class="water-card water-card-plan" :class="{ limiting: results.stability_score.limiting_tank === 'Fresh' }">
           <div class="water-card-header">
             <span class="water-card-title">Fresh</span>
-            <span v-if="results.stability_score.limiting_tank === 'Fresh'" class="water-card-label">sets the pace</span>
+            <span v-if="results.stability_score.limiting_tank === 'Fresh'" class="water-card-label">Main constraint</span>
           </div>
           <div>
             <div class="water-card-days">{{ results.stability_score.fresh_days?.toFixed(2) }}<span>days</span></div>
@@ -539,7 +539,7 @@
         <div class="water-card water-card-plan" :class="{ limiting: results.stability_score.limiting_tank === 'Grey' }">
           <div class="water-card-header">
             <span class="water-card-title">Grey</span>
-            <span v-if="results.stability_score.limiting_tank === 'Grey'" class="water-card-label">sets the pace</span>
+            <span v-if="results.stability_score.limiting_tank === 'Grey'" class="water-card-label">Main constraint</span>
           </div>
           <div>
             <div class="water-card-days">{{ results.stability_score.grey_days?.toFixed(2) }}<span>days</span></div>
@@ -552,7 +552,7 @@
         <div class="water-card water-card-plan" :class="{ limiting: results.stability_score.limiting_tank === 'Black' }">
           <div class="water-card-header">
             <span class="water-card-title">Black</span>
-            <span v-if="results.stability_score.limiting_tank === 'Black'" class="water-card-label">sets the pace</span>
+            <span v-if="results.stability_score.limiting_tank === 'Black'" class="water-card-label">Main constraint</span>
           </div>
           <div>
             <div class="water-card-days">{{ results.stability_score.black_days?.toFixed(2) }}<span>days</span></div>
