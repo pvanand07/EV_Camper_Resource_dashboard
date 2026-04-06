@@ -821,10 +821,7 @@ createApp({
       return 'tone-not-supported';
     },
     planOutlookHeadline() {
-      const s = this.supportStatusLabel;
-      if (s === 'On track') return 'Comfortable margin';
-      if (s === 'Needs attention') return 'Tight — plan stops';
-      return 'Below trip target';
+      return this.supportStatusLabel;
     },
 
     // From backend API (Daily Usage Heatmap calculations)
