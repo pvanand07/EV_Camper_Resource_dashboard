@@ -311,10 +311,8 @@ def _build_recommended_actions(
         category="gap_summary",
         title=f"Close the {limiting_tank.lower()} gap",
         summary=(
-            f"You are short by {gap_days:.2f} days. To reach {target_days} days, "
-            f"reduce {limiting_tank.lower()} load by about {required_daily_reduction:.2f} gal/day "
-            f"({required_reduction_pct:.0f}%) or create about {extra_capacity_needed:.1f} gal "
-            f"of additional usable {limiting_tank.lower()} margin."
+            f"{gap_days:.2f} d short — cut {required_daily_reduction:.1f} gal/day "
+            f"({required_reduction_pct:.0f}%) or add {extra_capacity_needed:.0f} gal of {limiting_tank.lower()} capacity."
         ),
         estimated_days_gain=gap_days,
         estimated_daily_change_gal=required_daily_reduction,
@@ -343,8 +341,7 @@ def _build_recommended_actions(
                 tank="Fresh",
                 title="Top up the fresh tank before departure",
                 summary=(
-                    f"Starting with {extra_start_gallons:.1f} more gal in fresh water would add about "
-                    f"{gain_days:.2f} days of autonomy."
+                    f"Tank is {extra_start_gallons:.0f} gal below capacity — topping up before leaving adds {gain_days:.2f} days."
                 ),
                 estimated_days_gain=gain_days,
             )
@@ -360,10 +357,9 @@ def _build_recommended_actions(
             tank="Fresh",
             title=f"Must refill fresh water on day {refill_day} of your trip",
             summary=(
-                f"At the current burn rate, fresh water runs out around day {limiting_days:.2f}. "
-                f"Plan a refill stop by day {refill_day}; adding about {refill_amount:.1f} gal would cover the gap, "
-                f"while a full refill would extend autonomy by about {refill_gain:.2f} days."
-            ),
+                    f"Runs out day {limiting_days:.1f} — refill by day {refill_day}. "
+                    f"Add {refill_amount:.0f} gal to cover the gap; full tank extends by {refill_gain:.1f} days."
+                ),
             estimated_days_gain=refill_gain,
         )
     else:
@@ -375,8 +371,7 @@ def _build_recommended_actions(
                 tank=limiting_tank,
                 title=f"Empty the {limiting_tank.lower()} tank before departure",
                 summary=(
-                    f"Removing the current {reclaimable_gallons:.1f} gal load from the {limiting_tank.lower()} tank "
-                    f"would add about {gain_days:.2f} days of usable margin."
+                    f"{reclaimable_gallons:.0f} gal already in the {limiting_tank.lower()} tank — dump before leaving to gain {gain_days:.2f} days."
                 ),
                 estimated_days_gain=gain_days,
             )
@@ -395,10 +390,8 @@ def _build_recommended_actions(
                 tank="Grey",
                 title="Plan one grey tank service during the stay",
                 summary=(
-                    f"Grey capacity is projected to fill around day {grey_days_val:.2f}, before your "
-                    f"{target_days}-day target. Plan a dump during the stay (by day {grey_service_day} to stay ahead). "
-                    f"One full service restores about {grey_cap:.1f} gal and adds about {grey_service_gain:.2f} days "
-                    f"of grey margin."
+                    f"Fills by day {grey_days_val:.1f} — dump by day {grey_service_day} to stay ahead. "
+                    f"Full service ({grey_cap:.0f} gal) adds {grey_service_gain:.1f} days."
                 ),
                 estimated_days_gain=grey_service_gain,
             )
@@ -415,10 +408,8 @@ def _build_recommended_actions(
                 tank="Black",
                 title=f"Plan one black tank service on day {black_service_day}",
                 summary=(
-                    f"Black capacity is projected to fill around day {black_days_val:.2f}, before your "
-                    f"{target_days}-day target. Schedule a dump on day {black_service_day} to stay ahead. "
-                    f"One full service restores about {black_cap:.1f} gal and adds about {black_service_gain:.2f} days "
-                    f"of black capacity."
+                    f"Fills by day {black_days_val:.1f} — dump on day {black_service_day}. "
+                    f"Full service ({black_cap:.0f} gal) adds {black_service_gain:.1f} days."
                 ),
                 estimated_days_gain=black_service_gain,
             )
@@ -436,8 +427,7 @@ def _build_recommended_actions(
                     category="feature_toggle",
                     title="Turn on grey water reuse for toilet flushing",
                     summary=(
-                        f"Reusing up to {recycled_gallons:.2f} gal/day of grey water for toilet flushing would "
-                        f"improve overall feasibility by about {gain_days:.2f} days."
+                        f"Redirect {recycled_gallons:.1f} gal/day of grey to toilet flushing — gains {gain_days:.2f} days overall."
                     ),
                     estimated_days_gain=gain_days,
                     estimated_daily_change_gal=recycled_gallons,
@@ -475,10 +465,8 @@ def _build_recommended_actions(
             activity_name=contributor["activity_name"],
             title=title,
             summary=(
-                f"{hint} {contributor['activity_name']} currently drives about "
-                f"{contributor['stream_share_pct']:.0f}% of the {limiting_tank.lower()} load. "
-                f"Reducing it by about {cut_pct}% would trim roughly {saved_gallons:.2f} gal/day and add "
-                f"about {gain_days:.2f} days."
+                f"{contributor['activity_name']} is {contributor['stream_share_pct']:.0f}% of the load. "
+                f"Cut {cut_pct}% → −{saved_gallons:.1f} gal/day, +{gain_days:.2f} days."
             ),
             estimated_days_gain=gain_days,
             estimated_daily_change_gal=saved_gallons,

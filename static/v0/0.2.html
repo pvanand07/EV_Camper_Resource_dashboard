@@ -124,23 +124,6 @@
       border-color: rgba(251,191,36,0.35);
     }
     .water-card-label { letter-spacing: 0.04em; }
-    .water-plan-steps-title {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin: 1.25rem 0 0.5rem;
-      padding-bottom: 0.35rem;
-      border-bottom: 1px solid rgba(51,65,85,0.6);
-    }
-    .water-action-group-heading {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #94a3b8;
-      margin: 0.85rem 0 0.4rem;
-    }
-    .water-action-group-heading:first-child { margin-top: 0; }
     .water-status-note.plan-note {
       margin-top: 1.1rem;
       text-align: left;
@@ -236,56 +219,27 @@
     .water-support-status-card.tone-needs-attention .support-status-label { color: var(--warning); }
     .water-support-status-card.tone-not-supported .support-status-label { color: var(--danger); }
     /* ── Recommended actions ─────────────────────────────── */
-    .water-actions { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 1.1rem; }
-    .water-action-group { display: flex; flex-direction: column; gap: 0.55rem; }
-    .water-action-card {
-      border-radius: 12px; padding: 0.85rem 1rem; text-align: left;
-      border: 1px solid transparent;
+    .action-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .action-row {
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.55rem 0.85rem; border-radius: 8px;
+      border-left: 3px solid transparent;
+      background: rgba(255,255,255,0.025);
     }
-    /* gap_summary */
-    .water-action-card.cat-gap_summary {
-      background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.28);
+    .action-row.cat-gap_summary       { border-left-color: #f87171; }
+    .action-row.cat-service_stop      { border-left-color: #22d3ee; }
+    .action-row.cat-starting_state    { border-left-color: #60a5fa; }
+    .action-row.cat-feature_toggle    { border-left-color: #34d399; }
+    .action-row.cat-activity_reduction{ border-left-color: #fbbf24; }
+    .action-icon  { font-size: 1rem; flex-shrink: 0; line-height: 1; }
+    .action-body  { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+    .action-title { font-size: 0.875rem; font-weight: 600; color: #f1f5f9; }
+    .action-text  { font-size: 0.775rem; color: var(--text-muted); line-height: 1.4; }
+    .action-gain  {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; flex-shrink: 0;
+      background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25);
+      color: var(--warning); border-radius: 999px; padding: 0.15rem 0.45rem; white-space: nowrap;
     }
-    /* service_stop */
-    .water-action-card.cat-service_stop {
-      background: rgba(34,211,238,0.07); border-color: rgba(34,211,238,0.25);
-    }
-    /* starting_state */
-    .water-action-card.cat-starting_state {
-      background: rgba(99,179,237,0.07); border-color: rgba(99,179,237,0.25);
-    }
-    /* feature_toggle */
-    .water-action-card.cat-feature_toggle {
-      background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.28);
-    }
-    /* activity_reduction */
-    .water-action-card.cat-activity_reduction {
-      background: rgba(251,191,36,0.07); border-color: rgba(251,191,36,0.25);
-    }
-    .water-action-top {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 0.75rem; margin-bottom: 0.4rem;
-    }
-    .water-action-left { display: flex; align-items: flex-start; gap: 0.55rem; }
-    .water-action-icon { font-size: 1.05rem; line-height: 1.3; flex-shrink: 0; }
-    .water-action-title { font-size: 0.92rem; font-weight: 600; color: #f8fafc; }
-    .water-action-chips { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-    .water-action-days {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-      background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.28);
-      color: var(--warning); border-radius: 999px; padding: 0.18rem 0.5rem; white-space: nowrap;
-    }
-    .water-action-cat {
-      font-family: 'Outfit', sans-serif; font-size: 0.68rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.06em; border-radius: 999px;
-      padding: 0.18rem 0.5rem; white-space: nowrap;
-    }
-    .water-action-cat.cat-gap_summary    { color: #fca5a5; background: rgba(248,113,113,0.14); border: 1px solid rgba(248,113,113,0.25); }
-    .water-action-cat.cat-service_stop   { color: #67e8f9; background: rgba(34,211,238,0.12);  border: 1px solid rgba(34,211,238,0.22);  }
-    .water-action-cat.cat-starting_state { color: #93c5fd; background: rgba(99,179,237,0.12);  border: 1px solid rgba(99,179,237,0.22);  }
-    .water-action-cat.cat-feature_toggle { color: #6ee7b7; background: rgba(52,211,153,0.12);  border: 1px solid rgba(52,211,153,0.25);  }
-    .water-action-cat.cat-activity_reduction { color: #fde68a; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); }
-    .water-action-summary { font-size: 0.87rem; color: var(--text-muted); line-height: 1.5; padding-left: 1.6rem; }
     .drift-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: var(--warning); margin-left: 0.5rem; }
 
     /* ═══════════════════════════════════════════════════
@@ -569,38 +523,25 @@
       </div>
       <div v-else-if="results?.stay_supported === false" class="water-status-note plan-note plan-note-gap">
         <span class="plan-note-label">Timeline check</span>
-        For a <strong>{{ results.stability_score.target_days }}-day</strong> trip, water headroom tops out around <strong>{{ results.stability_score.limiting_days?.toFixed(2) }}</strong> days — plan refills, dumps, or lighter use to close the gap.
+        <strong>{{ results.stability_score.limiting_days?.toFixed(2) }} d</strong> of headroom vs. a <strong>{{ results.stability_score.target_days }}-day</strong> target — {{ results.stability_score.limiting_tank }} tank is the constraint.
       </div>
       <div
         v-if="results?.stay_supported === false && results?.recommended_actions?.length"
-        class="water-actions"
+        class="action-list"
       >
-        <h3 class="water-plan-steps-title">Ideas to reshape the plan</h3>
-        <template v-for="group in actionGroups" :key="group.label">
-          <div v-if="group.actions.length">
-            <div class="water-action-group-heading">{{ group.label }}</div>
-            <div class="water-action-group">
-              <div
-                v-for="action in group.actions"
-                :key="action.priority"
-                class="water-action-card"
-                :class="'cat-' + action.category"
-              >
-                <div class="water-action-top">
-                  <div class="water-action-left">
-                    <span class="water-action-icon">{{ actionIcon(action.category) }}</span>
-                    <span class="water-action-title">{{ action.title }}</span>
-                  </div>
-                  <div class="water-action-chips">
-                    <span class="water-action-cat" :class="'cat-' + action.category">{{ actionCatLabel(action.category) }}</span>
-                    <span class="water-action-days">≈ +{{ action.estimated_days_gain?.toFixed(2) }} d margin</span>
-                  </div>
-                </div>
-                <div class="water-action-summary">{{ action.summary }}</div>
-              </div>
-            </div>
+        <div
+          v-for="action in results.recommended_actions"
+          :key="action.priority"
+          class="action-row"
+          :class="'cat-' + action.category"
+        >
+          <span class="action-icon">{{ actionIcon(action.category) }}</span>
+          <div class="action-body">
+            <span class="action-title">{{ action.title }}</span>
+            <span class="action-text">{{ action.summary }}</span>
           </div>
-        </template>
+          <span class="action-gain">+{{ action.estimated_days_gain?.toFixed(2) }} d</span>
+        </div>
       </div>
     </div>
 
@@ -918,17 +859,6 @@ createApp({
       const ranges = this.realtime?.heat_ranges?.[this.realtimeStreamKey];
       return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
     },
-    actionGroups() {
-      const actions = this.results?.recommended_actions ?? [];
-      const pick = (...cats) => actions.filter(a => cats.includes(a.category));
-      return [
-        { label: 'Where you’re short', actions: pick('gap_summary') },
-        { label: 'Before wheels roll', actions: pick('starting_state') },
-        { label: 'On the road — services', actions: pick('service_stop') },
-        { label: 'Equipment & settings', actions: pick('feature_toggle') },
-        { label: 'Lighter usage', actions: pick('activity_reduction') },
-      ];
-    },
   },
 
   watch: {
@@ -1178,15 +1108,6 @@ createApp({
         feature_toggle:    '♻️',
         activity_reduction:'✂️',
       }[category] ?? '💡';
-    },
-    actionCatLabel(category) {
-      return {
-        gap_summary:        'Shortfall',
-        service_stop:       'Service',
-        starting_state:     'Departure',
-        feature_toggle:     'Setup',
-        activity_reduction: 'Usage',
-      }[category] ?? category;
     },
   },
 }).mount('#app');
