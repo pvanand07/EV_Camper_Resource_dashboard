@@ -6,7 +6,7 @@ Exposes editable inputs and computed results.
 import math
 import os
 import sqlite3
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -17,7 +17,26 @@ from pydantic import BaseModel, field_validator
 
 import water_model
 
-app = FastAPI(title="Water Intelligence Engine v2 API")
+
+@contextmanager
+def get_conn():
+    conn = sqlite3.connect(water_model.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Single-process: reset DB once per server start. (Multiple uvicorn workers would each reset.)
+    with get_conn() as conn:
+        water_model.reset_database(conn)
+    yield
+
+
+app = FastAPI(title="Water Intelligence Engine v2 API", lifespan=lifespan)
 
 # Mount static files for versioned HTML
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -41,31 +60,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@contextmanager
-def get_conn():
-    conn = sqlite3.connect(water_model.DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-    finally:
-        conn.close()
-
-
-def ensure_initialized(conn: sqlite3.Connection):
-    cur = conn.cursor()
-    try:
-        cur.execute("SELECT COUNT(*) FROM user_type")
-        if cur.fetchone()[0] == 0:
-            water_model.create_db(conn)
-            water_model.seed_data(conn)
-    except sqlite3.OperationalError:
-        water_model.create_db(conn)
-        water_model.seed_data(conn)
-    # Always run migrations so new columns (drift, drift_factor) exist
-    # on existing databases before any read or write touches them.
-    water_model._migrate(conn)
 
 
 # ─── Pydantic models ────────────────────────────────────────────────────────
@@ -498,7 +492,6 @@ def _build_recommended_actions(
 @app.get("/api/inputs")
 def get_inputs():
     with get_conn() as conn:
-        ensure_initialized(conn)
         cur = conn.cursor()
 
         cur.execute("SELECT name, count, is_child FROM user_type ORDER BY id")
@@ -542,7 +535,6 @@ def get_inputs():
 @app.put("/api/inputs")
 def put_inputs(payload: InputsUpdate):
     with get_conn() as conn:
-        ensure_initialized(conn)
         cur = conn.cursor()
 
         if payload.user_types is not None:
@@ -598,7 +590,6 @@ def put_inputs(payload: InputsUpdate):
 @app.post("/api/compute")
 def compute():
     with get_conn() as conn:
-        ensure_initialized(conn)
         water_model.compute_and_store(conn)
     return {"ok": True}
 
@@ -606,7 +597,6 @@ def compute():
 @app.get("/api/results")
 def get_results():
     with get_conn() as conn:
-        ensure_initialized(conn)
         water_model.compute_and_store(conn)
         cur = conn.cursor()
 
@@ -742,7 +732,6 @@ def _realtime_day_activities(raw_rows: list, day_num: int) -> list:
 def get_realtime():
     """Realtime view: per-day stats, daily activities, and alerts when usage > 10% above baseline."""
     with get_conn() as conn:
-        ensure_initialized(conn)
         water_model.compute_and_store(conn)
         cur = conn.cursor()
 

@@ -133,6 +133,12 @@ def create_db(conn: sqlite3.Connection):
     conn.commit()
 
 
+def reset_database(conn: sqlite3.Connection):
+    """Recreate schema from scratch and load default seed data. Used at app startup."""
+    create_db(conn)
+    seed_data(conn)
+
+
 def seed_data(conn: sqlite3.Connection):
     cur = conn.cursor()
 
@@ -185,89 +191,6 @@ def seed_data(conn: sqlite3.Connection):
     conn.commit()
 
 
-def _migrate(conn: sqlite3.Connection):
-    """Add missing columns to existing DBs without dropping tables."""
-    cur = conn.cursor()
-
-    # daily_usage_by_day table
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS daily_usage_by_day (
-            id               INTEGER PRIMARY KEY AUTOINCREMENT,
-            activity_name    TEXT NOT NULL,
-            day_num          INTEGER NOT NULL,
-            fresh_gal        REAL NOT NULL,
-            grey_gal         REAL NOT NULL,
-            black_gal        REAL NOT NULL,
-            drift_factor     REAL NOT NULL DEFAULT 1.0
-        )
-    """)
-
-    # drift_factor column on existing daily_usage_by_day
-    try:
-        cur.execute("ALTER TABLE daily_usage_by_day ADD COLUMN drift_factor REAL NOT NULL DEFAULT 1.0")
-    except sqlite3.OperationalError:
-        pass  # already exists
-
-    # drift column on tank_environment
-    try:
-        cur.execute("ALTER TABLE tank_environment ADD COLUMN drift REAL NOT NULL DEFAULT 0.0")
-    except sqlite3.OperationalError:
-        pass  # already exists
-
-    # drift_seed column on tank_environment
-    try:
-        cur.execute("ALTER TABLE tank_environment ADD COLUMN drift_seed INTEGER")
-    except sqlite3.OperationalError:
-        pass  # already exists
-
-    # alert_threshold column on tank_environment (fraction; 0.10 = 10%)
-    try:
-        cur.execute("ALTER TABLE tank_environment ADD COLUMN alert_threshold REAL NOT NULL DEFAULT 0.10")
-    except sqlite3.OperationalError:
-        pass  # already exists
-
-    # greywater_recycle flag: redirect prev-day accumulated grey to toilet flushing
-    try:
-        cur.execute("ALTER TABLE tank_environment ADD COLUMN greywater_recycle INTEGER NOT NULL DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass  # already exists
-
-    # stability_score table: add fresh_days, grey_days, black_days columns
-    for col in ["fresh_days", "grey_days", "black_days"]:
-        try:
-            cur.execute(f"ALTER TABLE stability_score ADD COLUMN {col} REAL NOT NULL DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass  # already exists
-
-    # Children behavior multipliers — add if missing (existing DBs pre-date this feature)
-    cur.execute("INSERT OR IGNORE INTO behavior_multiplier (user_type, shower_mult, sink_mult, toilet_mult) VALUES (?,?,?,?)",
-                ("Children", 0.5, 0.6, 0.8))
-
-    # stability_score: rating column renamed to status (older DBs)
-    try:
-        cur.execute("ALTER TABLE stability_score RENAME COLUMN rating TO status")
-    except sqlite3.OperationalError:
-        pass
-
-    # Activity table hygiene:
-    # 1) keep only the earliest row per activity name
-    # 2) enforce uniqueness going forward
-    cur.execute("""
-        DELETE FROM activity
-        WHERE id NOT IN (
-            SELECT MIN(id)
-            FROM activity
-            GROUP BY name
-        )
-    """)
-    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_activity_name_unique ON activity(name)")
-
-    # Default current_fresh_gal to 100 if it was seeded as 0
-    cur.execute("UPDATE tank_environment SET current_fresh_gal = 100 WHERE id = 1 AND current_fresh_gal = 0")
-
-    conn.commit()
-
-
 def _drift_multiplier(drift: float, rng: random.Random) -> float:
     """
     Draw a multiplier from a truncated normal distribution using the supplied RNG.
@@ -292,7 +215,6 @@ def _drift_multiplier(drift: float, rng: random.Random) -> float:
 
 def compute_and_store(conn: sqlite3.Connection):
     cur = conn.cursor()
-    _migrate(conn)
 
     # ── Load people
     cur.execute("SELECT name, count, is_child FROM user_type")
@@ -593,8 +515,7 @@ if __name__ == "__main__":
         os.remove(DB_PATH)
 
     conn = sqlite3.connect(DB_PATH)
-    create_db(conn)
-    seed_data(conn)
+    reset_database(conn)
     effs = compute_and_store(conn)
     print_results(conn, effs)
     conn.close()
