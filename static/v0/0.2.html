@@ -89,35 +89,6 @@
     .save-bar .msg.err { color: var(--danger); }
 
     /* ── Results: trip planner tone (not scorecard) ───────── */
-    .results-plan-intro {
-      background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(15,20,28,0.95) 45%, var(--bg-card) 100%);
-      border: 1px solid rgba(34,211,238,0.2);
-      border-radius: 14px;
-      padding: 1.1rem 1.35rem 1.15rem;
-      margin-bottom: 1.25rem;
-      border-left: 4px solid var(--accent);
-    }
-    .results-plan-kicker {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--accent);
-      margin-bottom: 0.35rem;
-    }
-    .results-plan-lead {
-      font-size: 1.02rem;
-      font-weight: 500;
-      color: #e2e8f0;
-      line-height: 1.45;
-      max-width: 42rem;
-    }
-    .results-plan-lead span.mono {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      color: #f8fafc;
-    }
     .section.results-plan-section {
       border-radius: 14px;
       border-color: rgba(51,65,85,0.85);
@@ -534,11 +505,6 @@
   <!-- ═══ PLAN (results) TAB ═════════════════════════════════ -->
   <div class="panel" :class="{ active: tab==='results' }">
 
-    <div class="results-plan-intro" v-if="results">
-      <p class="results-plan-kicker">Trip water planner</p>
-      <p class="results-plan-lead" v-html="planIntroLead"></p>
-    </div>
-
     <!-- Water outlook -->
     <div class="section water-resource-section results-plan-section" v-if="results?.stability_score">
       <h2>💧 How far your tanks will carry you</h2>
@@ -918,11 +884,6 @@ createApp({
       if (s === 'On track') return 'Comfortable margin';
       if (s === 'Needs attention') return 'Tight — plan stops';
       return 'Below trip target';
-    },
-    planIntroLead() {
-      const d = this.results?.target_days;
-      const n = d != null && Number.isFinite(Number(d)) ? String(Math.round(Number(d))) : '—';
-      return `You’re sketching a <span class="mono">${n}-day</span> stay. Tune people, tanks, and habits on <strong>Input</strong>, then refresh — we map tanks, timing, and levers you can pull.`;
     },
 
     // From backend API (Daily Usage Heatmap calculations)
