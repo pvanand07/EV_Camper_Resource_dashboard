@@ -124,7 +124,7 @@ def create_db(conn: sqlite3.Connection):
         limiting_days  REAL NOT NULL,
         target_days    REAL NOT NULL,
         score_pct      REAL NOT NULL,
-        rating         TEXT NOT NULL,
+        status         TEXT NOT NULL,
         fresh_days     REAL NOT NULL DEFAULT 0,
         grey_days      REAL NOT NULL DEFAULT 0,
         black_days     REAL NOT NULL DEFAULT 0
@@ -242,6 +242,12 @@ def _migrate(conn: sqlite3.Connection):
     # Children behavior multipliers — add if missing (existing DBs pre-date this feature)
     cur.execute("INSERT OR IGNORE INTO behavior_multiplier (user_type, shower_mult, sink_mult, toilet_mult) VALUES (?,?,?,?)",
                 ("Children", 0.5, 0.6, 0.8))
+
+    # stability_score: rating column renamed to status (older DBs)
+    try:
+        cur.execute("ALTER TABLE stability_score RENAME COLUMN rating TO status")
+    except sqlite3.OperationalError:
+        pass
 
     # Activity table hygiene:
     # 1) keep only the earliest row per activity name
@@ -456,17 +462,20 @@ def compute_and_store(conn: sqlite3.Connection):
         else ("Grey" if fmt(d_grey) <= fmt(d_black) else "Black")
     )
 
-    if   score >= 100: rating = "🟢 Full Autonomy"
-    elif score >= 70:  rating = "🟡 Good"
-    elif score >= 40:  rating = "🟠 Marginal"
-    else:               rating = "🔴 Insufficient"
+    # Stability status from score_pct (higher = more headroom vs target stay)
+    if score >= 80:
+        stability_status = "On track"
+    elif score >= 50:
+        stability_status = "Needs attention"
+    else:
+        stability_status = "Not supported"
 
     cur.execute("DELETE FROM stability_score")
     cur.execute("""
         INSERT INTO stability_score
-          (limiting_tank, limiting_days, target_days, score_pct, rating, fresh_days, grey_days, black_days)
+          (limiting_tank, limiting_days, target_days, score_pct, status, fresh_days, grey_days, black_days)
         VALUES (?,?,?,?,?,?,?,?)
-    """, (limiting, round(min_days, 2), target_days, round(score, 1), rating,
+    """, (limiting, round(min_days, 2), target_days, round(score, 1), stability_status,
           round(fmt(d_fresh), 2), round(fmt(d_grey), 2), round(fmt(d_black), 2)))
 
     conn.commit()
@@ -559,14 +568,14 @@ def print_results(conn: sqlite3.Connection, effs):
     print(f"\n🎯  STABILITY SCORE")
     print(f"  {'─'*45}")
     cur.execute("""SELECT limiting_tank, limiting_days, target_days,
-                          score_pct, rating
+                          score_pct, status
                    FROM stability_score""")
-    lt, ld, td, sc, rt = cur.fetchone()
+    lt, ld, td, sc, st = cur.fetchone()
     print(f"  Limiting Tank   : {lt}")
     print(f"  Limiting Days   : {ld:.2f} days")
     print(f"  Target Days     : {td:.0f} days")
     print(f"  Stability Score : {sc:.1f} / 100")
-    print(f"  Rating          : {rt}")
+    print(f"  Status          : {st}")
     print(SEP2)
 
     # ── Table inventory

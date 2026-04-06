@@ -56,7 +56,7 @@
     .drift-value-badge { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--warning); background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; padding: 0.2rem 0.6rem; min-width: 52px; text-align: center; }
     .drift-range-row { display: flex; align-items: center; gap: 0.75rem; }
     .drift-range-row span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
-    input[type="range"] { flex: 1; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; cursor: pointer; background: linear-gradient(to right, var(--accent) 0%, var(--accent) calc(var(--drift-pct,0)*1%), var(--border) calc(var(--drift-pct,0)*1%), var(--border) 100%); }
+    input[type="range"] { flex: 1; appearance: none; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; cursor: pointer; background: linear-gradient(to right, var(--accent) 0%, var(--accent) calc(var(--drift-pct,0)*1%), var(--border) calc(var(--drift-pct,0)*1%), var(--border) 100%); }
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-dark); box-shadow: 0 0 4px rgba(34,211,238,0.5); }
     .drift-band-label { font-size: 0.78rem; color: var(--text-muted); }
     .drift-band-label span { color: var(--warning); font-family: 'JetBrains Mono', monospace; }
@@ -88,6 +88,115 @@
     .save-bar .msg { font-size: 0.9rem; color: var(--success); }
     .save-bar .msg.err { color: var(--danger); }
 
+    /* ── Results: trip planner tone (not scorecard) ───────── */
+    .results-plan-intro {
+      background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(15,20,28,0.95) 45%, var(--bg-card) 100%);
+      border: 1px solid rgba(34,211,238,0.2);
+      border-radius: 14px;
+      padding: 1.1rem 1.35rem 1.15rem;
+      margin-bottom: 1.25rem;
+      border-left: 4px solid var(--accent);
+    }
+    .results-plan-kicker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+    }
+    .results-plan-lead {
+      font-size: 1.02rem;
+      font-weight: 500;
+      color: #e2e8f0;
+      line-height: 1.45;
+      max-width: 42rem;
+    }
+    .results-plan-lead span.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+    .section.results-plan-section {
+      border-radius: 14px;
+      border-color: rgba(51,65,85,0.85);
+      background: linear-gradient(180deg, rgba(26,35,50,0.98) 0%, rgba(22,28,38,0.99) 100%);
+    }
+    .section.results-plan-section > h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e0f2fe;
+      letter-spacing: -0.01em;
+    }
+    .section.results-plan-section > h2 .plan-h2-sub {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      letter-spacing: 0;
+    }
+    .water-resource-section.results-plan-section {
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+    .water-resource-section.results-plan-section > h2 { color: #e0f2fe; }
+    .water-card.water-card-plan {
+      background: rgba(13,17,23,0.55);
+      border: 1px solid rgba(51,65,85,0.65);
+      box-shadow: none;
+    }
+    .water-card.water-card-plan.limiting {
+      background: rgba(251,191,36,0.06);
+      border-color: rgba(251,191,36,0.35);
+    }
+    .water-card-label { letter-spacing: 0.04em; }
+    .water-plan-steps-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.5rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid rgba(51,65,85,0.6);
+    }
+    .water-action-group-heading {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #94a3b8;
+      margin: 0.85rem 0 0.4rem;
+    }
+    .water-action-group-heading:first-child { margin-top: 0; }
+    .water-status-note.plan-note {
+      margin-top: 1.1rem;
+      text-align: left;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(51,65,85,0.7);
+      background: rgba(13,17,23,0.45);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .water-status-note.plan-note .plan-note-label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .water-status-note.plan-note strong { color: #f8fafc; font-weight: 600; }
+    .water-status-note.plan-note-ok { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.06); }
+    .water-status-note.plan-note-ok .plan-note-label { color: rgba(52,211,153,0.85); }
+    .water-status-note.plan-note-gap { border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.06); }
+    .water-status-note.plan-note-gap .plan-note-label { color: rgba(248,113,113,0.9); }
+    .water-status-note.plan-note-gap strong { color: #fecaca; }
+
     /* Results misc */
     .results-table { font-family: 'JetBrains Mono', monospace; table-layout: fixed; }
     .results-table th:not(:first-child),
@@ -99,26 +208,113 @@
     .status-bad { color: var(--danger); }
 
     /* Water Resource Cards */
-    .water-resource-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 1rem; }
-    @media (max-width: 600px) { .water-resource-cards { grid-template-columns: 1fr; } }
-    .water-card { background: var(--bg-input); padding: 1rem 1.25rem; border-radius: 10px; border: 1px solid var(--border); }
-    .water-card.limiting { border-color: rgba(251,191,36,0.5); background: rgba(251,191,36,0.08); }
-    .water-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-    .water-card-title { font-size: 0.9rem; font-weight: 500; color: var(--text); }
-    .water-card-label { font-size: 0.75rem; color: var(--warning); font-weight: 500; }
-    .water-card-bar { height: 6px; border-radius: 3px; background: rgba(148,163,184,0.2); margin-bottom: 0.6rem; overflow: hidden; }
-    .water-card-bar-fill { height: 100%; border-radius: 3px; }
-    .water-card-bar-fill.fresh { background: rgba(251,191,36,0.7); }
-    .water-card-bar-fill.grey { background: rgba(96,165,250,0.7); }
-    .water-card-bar-fill.black { background: rgba(96,165,250,0.7); }
-    .water-card-days { font-size: 1.5rem; font-weight: 600; color: var(--text); }
-    .water-card-days span { font-size: 0.85rem; font-weight: 400; color: var(--text-muted); margin-left: 0.25rem; }
-    .water-status-bar { margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; }
-    .water-status-bar.supported { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
-    .water-status-bar.not-supported { background: rgba(248,113,113,0.12); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
-    .water-status-bar::before { content: ''; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .water-status-bar.supported::before { background: #4ade80; }
-    .water-status-bar.not-supported::before { background: var(--danger); }
+    .water-resource-section { background: transparent; border: none; padding: 0; }
+    .water-resource-section h2 { margin-bottom: 1rem; }
+    .water-resource-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+    @media (max-width: 960px) { .water-resource-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .water-resource-cards { grid-template-columns: 1fr; } }
+    .water-card {
+      background: rgba(255,255,255,0.03);
+      padding: 1rem 1.25rem;
+      border-radius: 14px;
+      border: none;
+      min-height: 142px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .water-card.limiting { background: rgba(255,255,255,0.045); }
+    .water-card-header { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 0.2rem; margin-bottom: 0.75rem; }
+    /* Same header band height so Status + Fresh/Grey/Black titles line up in the row */
+    .water-resource-cards > .water-card > .water-card-header {
+      min-height: 2.55rem;
+    }
+    .water-card-title { font-size: 0.95rem; font-weight: 500; color: rgba(226,232,240,0.88); }
+    .water-card-label { font-size: 0.74rem; color: var(--warning); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .water-card-days { font-size: 2rem; font-weight: 600; color: #f8fafc; line-height: 1.05; letter-spacing: -0.03em; }
+    .water-card.limiting .water-card-days { color: #fbbf24; }
+    .water-card-days span { font-size: 0.9rem; font-weight: 400; color: var(--text-muted); margin-left: 0.25rem; }
+    .water-card-foot { margin-top: 0.85rem; font-size: 0.9rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
+    .water-card-foot.warn { color: var(--warning); }
+    .water-card-foot.ok { color: rgba(226,232,240,0.8); }
+    .water-status-note { margin-top: 0.9rem; font-size: 0.95rem; color: var(--text-muted); text-align: center; }
+    .water-status-note strong { color: #f8fafc; font-weight: 600; }
+    .water-status-note.supported strong { color: #f8fafc; }
+    .water-status-note.not-supported strong { color: var(--danger); }
+
+    /* Stability status card — same column layout as tank cards (header / value / foot) */
+    .water-support-status-card {
+      min-height: 142px;
+    }
+    .water-support-status-foot {
+      visibility: hidden;
+    }
+    .support-status-label {
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      padding: 0 0.5rem;
+      max-width: 11rem;
+    }
+    .water-support-status-card.tone-on-track .support-status-label { color: var(--success); }
+    .water-support-status-card.tone-needs-attention .support-status-label { color: var(--warning); }
+    .water-support-status-card.tone-not-supported .support-status-label { color: var(--danger); }
+    /* ── Recommended actions ─────────────────────────────── */
+    .water-actions { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 1.1rem; }
+    .water-action-group { display: flex; flex-direction: column; gap: 0.55rem; }
+    .water-action-card {
+      border-radius: 12px; padding: 0.85rem 1rem; text-align: left;
+      border: 1px solid transparent;
+    }
+    /* gap_summary */
+    .water-action-card.cat-gap_summary {
+      background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.28);
+    }
+    /* service_stop */
+    .water-action-card.cat-service_stop {
+      background: rgba(34,211,238,0.07); border-color: rgba(34,211,238,0.25);
+    }
+    /* starting_state */
+    .water-action-card.cat-starting_state {
+      background: rgba(99,179,237,0.07); border-color: rgba(99,179,237,0.25);
+    }
+    /* feature_toggle */
+    .water-action-card.cat-feature_toggle {
+      background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.28);
+    }
+    /* activity_reduction */
+    .water-action-card.cat-activity_reduction {
+      background: rgba(251,191,36,0.07); border-color: rgba(251,191,36,0.25);
+    }
+    .water-action-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 0.75rem; margin-bottom: 0.4rem;
+    }
+    .water-action-left { display: flex; align-items: flex-start; gap: 0.55rem; }
+    .water-action-icon { font-size: 1.05rem; line-height: 1.3; flex-shrink: 0; }
+    .water-action-title { font-size: 0.92rem; font-weight: 600; color: #f8fafc; }
+    .water-action-chips { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+    .water-action-days {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+      background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.28);
+      color: var(--warning); border-radius: 999px; padding: 0.18rem 0.5rem; white-space: nowrap;
+    }
+    .water-action-cat {
+      font-family: 'Outfit', sans-serif; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; border-radius: 999px;
+      padding: 0.18rem 0.5rem; white-space: nowrap;
+    }
+    .water-action-cat.cat-gap_summary    { color: #fca5a5; background: rgba(248,113,113,0.14); border: 1px solid rgba(248,113,113,0.25); }
+    .water-action-cat.cat-service_stop   { color: #67e8f9; background: rgba(34,211,238,0.12);  border: 1px solid rgba(34,211,238,0.22);  }
+    .water-action-cat.cat-starting_state { color: #93c5fd; background: rgba(99,179,237,0.12);  border: 1px solid rgba(99,179,237,0.22);  }
+    .water-action-cat.cat-feature_toggle { color: #6ee7b7; background: rgba(52,211,153,0.12);  border: 1px solid rgba(52,211,153,0.25);  }
+    .water-action-cat.cat-activity_reduction { color: #fde68a; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); }
+    .water-action-summary { font-size: 0.87rem; color: var(--text-muted); line-height: 1.5; padding-left: 1.6rem; }
     .drift-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: var(--warning); margin-left: 0.5rem; }
 
     /* ═══════════════════════════════════════════════════
@@ -213,12 +409,12 @@
       </select>
     </div>
     <h1>💧 Water Intelligence Engine v2</h1>
-    <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.25rem;">Unified architecture — edit inputs, view computed results</p>
+    <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.25rem;">Model your trip, then shape a water plan from real tank math</p>
   </header>
 
   <div class="tabs">
     <button class="tab" :class="{ active: tab==='input' }"   @click="tab='input'">Input</button>
-    <button class="tab" :class="{ active: tab==='results' }" @click="tab='results'; refreshResults()">Results</button>
+    <button class="tab" :class="{ active: tab==='results' }" @click="tab='results'; refreshResults()">Plan</button>
     <button class="tab" :class="{ active: tab==='realtime' }" @click="tab='realtime'; loadRealtime()">Realtime</button>
   </div>
 
@@ -284,7 +480,7 @@
               Accumulated grey water from the previous day (shower, sinks) is redirected to toilet flushing, reducing fresh water consumption.
             </div>
             <div class="greywater-savings" v-if="greywaterRecycle">
-              See Results → Tank Projections for the impact on fresh &amp; grey autonomy days.
+              Open <strong>Plan</strong> → Tank capacity &amp; daily change to see fresh and grey runway.
             </div>
           </div>
           <label class="toggle" title="Toggle greywater recycling">
@@ -335,60 +531,122 @@
     </div>
   </div>
 
-  <!-- ═══ RESULTS TAB ════════════════════════════════════════ -->
+  <!-- ═══ PLAN (results) TAB ═════════════════════════════════ -->
   <div class="panel" :class="{ active: tab==='results' }">
 
-    <!-- Water resource -->
-    <div class="section" v-if="results?.stability_score">
-      <h2>💧 Water Resource</h2>
+    <div class="results-plan-intro" v-if="results">
+      <p class="results-plan-kicker">Trip water planner</p>
+      <p class="results-plan-lead" v-html="planIntroLead"></p>
+    </div>
+
+    <!-- Water outlook -->
+    <div class="section water-resource-section results-plan-section" v-if="results?.stability_score">
+      <h2>💧 How far your tanks will carry you</h2>
       <div class="water-resource-cards">
-        <div class="water-card" :class="{ limiting: results.stability_score.limiting_tank === 'Fresh' }">
+        <div
+          class="water-card water-card-plan water-support-status-card"
+          :class="supportStatusToneClass"
+        >
+          <div class="water-card-header">
+            <span class="water-card-title">Outlook</span>
+          </div>
+          <div>
+            <div class="support-status-label">{{ planOutlookHeadline }}</div>
+            <div class="water-card-foot water-support-status-foot">
+              <span>✓</span><span>Ok</span>
+            </div>
+          </div>
+        </div>
+        <div class="water-card water-card-plan" :class="{ limiting: results.stability_score.limiting_tank === 'Fresh' }">
           <div class="water-card-header">
             <span class="water-card-title">Fresh</span>
-            <span v-if="results.stability_score.limiting_tank === 'Fresh'" class="water-card-label">limiting</span>
+            <span v-if="results.stability_score.limiting_tank === 'Fresh'" class="water-card-label">sets the pace</span>
           </div>
-          <div class="water-card-bar">
-            <div class="water-card-bar-fill fresh" :style="{ width: Math.min((results.stability_score.fresh_days / Math.max(results.stability_score.fresh_days, results.stability_score.grey_days, results.stability_score.black_days, 1)) * 100, 100) + '%' }"></div>
+          <div>
+            <div class="water-card-days">{{ results.stability_score.fresh_days?.toFixed(2) }}<span>days</span></div>
+            <div class="water-card-foot" :class="waterCardTone('Fresh')">
+              <span>{{ waterCardPlanIcon('Fresh') }}</span>
+              <span>{{ waterCardPlanFoot('Fresh') }}</span>
+            </div>
           </div>
-          <div class="water-card-days">{{ results.stability_score.fresh_days?.toFixed(2) }}<span>days</span></div>
         </div>
-        <div class="water-card" :class="{ limiting: results.stability_score.limiting_tank === 'Grey' }">
+        <div class="water-card water-card-plan" :class="{ limiting: results.stability_score.limiting_tank === 'Grey' }">
           <div class="water-card-header">
             <span class="water-card-title">Grey</span>
-            <span v-if="results.stability_score.limiting_tank === 'Grey'" class="water-card-label">limiting</span>
+            <span v-if="results.stability_score.limiting_tank === 'Grey'" class="water-card-label">sets the pace</span>
           </div>
-          <div class="water-card-bar">
-            <div class="water-card-bar-fill grey" :style="{ width: Math.min((results.stability_score.grey_days / Math.max(results.stability_score.fresh_days, results.stability_score.grey_days, results.stability_score.black_days, 1)) * 100, 100) + '%' }"></div>
+          <div>
+            <div class="water-card-days">{{ results.stability_score.grey_days?.toFixed(2) }}<span>days</span></div>
+            <div class="water-card-foot" :class="waterCardTone('Grey')">
+              <span>{{ waterCardPlanIcon('Grey') }}</span>
+              <span>{{ waterCardPlanFoot('Grey') }}</span>
+            </div>
           </div>
-          <div class="water-card-days">{{ results.stability_score.grey_days?.toFixed(2) }}<span>days</span></div>
         </div>
-        <div class="water-card" :class="{ limiting: results.stability_score.limiting_tank === 'Black' }">
+        <div class="water-card water-card-plan" :class="{ limiting: results.stability_score.limiting_tank === 'Black' }">
           <div class="water-card-header">
             <span class="water-card-title">Black</span>
-            <span v-if="results.stability_score.limiting_tank === 'Black'" class="water-card-label">limiting</span>
+            <span v-if="results.stability_score.limiting_tank === 'Black'" class="water-card-label">sets the pace</span>
           </div>
-          <div class="water-card-bar">
-            <div class="water-card-bar-fill black" :style="{ width: Math.min((results.stability_score.black_days / Math.max(results.stability_score.fresh_days, results.stability_score.grey_days, results.stability_score.black_days, 1)) * 100, 100) + '%' }"></div>
+          <div>
+            <div class="water-card-days">{{ results.stability_score.black_days?.toFixed(2) }}<span>days</span></div>
+            <div class="water-card-foot" :class="waterCardTone('Black')">
+              <span>{{ waterCardPlanIcon('Black') }}</span>
+              <span>{{ waterCardPlanFoot('Black') }}</span>
+            </div>
           </div>
-          <div class="water-card-days">{{ results.stability_score.black_days?.toFixed(2) }}<span>days</span></div>
         </div>
       </div>
-      <div v-if="results?.stay_supported === true" class="water-status-bar supported">
-        {{ results.stability_score.target_days }}-day stay is supported — {{ results.stability_score.limiting_days?.toFixed(2) }} days available
+      <div v-if="results?.stay_supported === true" class="water-status-note plan-note plan-note-ok">
+        <span class="plan-note-label">Timeline check</span>
+        At this usage, your <strong>{{ results.stability_score.target_days }}-day</strong> itinerary fits the tanks — the tightest stream has about <strong>{{ results.stability_score.limiting_days?.toFixed(2) }}</strong> days of runway.
       </div>
-      <div v-else-if="results?.stay_supported === false" class="water-status-bar not-supported">
-        {{ results.stability_score.target_days }}-day stay is not supported — only {{ results.stability_score.limiting_days?.toFixed(2) }} days available
+      <div v-else-if="results?.stay_supported === false" class="water-status-note plan-note plan-note-gap">
+        <span class="plan-note-label">Timeline check</span>
+        For a <strong>{{ results.stability_score.target_days }}-day</strong> trip, water headroom tops out around <strong>{{ results.stability_score.limiting_days?.toFixed(2) }}</strong> days — plan refills, dumps, or lighter use to close the gap.
+      </div>
+      <div
+        v-if="results?.stay_supported === false && results?.recommended_actions?.length"
+        class="water-actions"
+      >
+        <h3 class="water-plan-steps-title">Ideas to reshape the plan</h3>
+        <template v-for="group in actionGroups" :key="group.label">
+          <div v-if="group.actions.length">
+            <div class="water-action-group-heading">{{ group.label }}</div>
+            <div class="water-action-group">
+              <div
+                v-for="action in group.actions"
+                :key="action.priority"
+                class="water-action-card"
+                :class="'cat-' + action.category"
+              >
+                <div class="water-action-top">
+                  <div class="water-action-left">
+                    <span class="water-action-icon">{{ actionIcon(action.category) }}</span>
+                    <span class="water-action-title">{{ action.title }}</span>
+                  </div>
+                  <div class="water-action-chips">
+                    <span class="water-action-cat" :class="'cat-' + action.category">{{ actionCatLabel(action.category) }}</span>
+                    <span class="water-action-days">≈ +{{ action.estimated_days_gain?.toFixed(2) }} d margin</span>
+                  </div>
+                </div>
+                <div class="water-action-summary">{{ action.summary }}</div>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
     <!-- Tank projections -->
-    <div class="section" v-if="results?.tank_projections?.length">
+    <div class="section results-plan-section" v-if="results?.tank_projections?.length">
       <h2>
-        🔋 Tank Projections <span class="badge">based on deterministic baseline</span>
+        🔋 Tank capacity &amp; daily change
+        <span class="plan-h2-sub">Numbers behind the outlook — deterministic baseline.</span>
         <span class="grey-chip" v-if="results.greywater_recycle">♻️ greywater recycling on</span>
       </h2>
       <table class="results-table">
-        <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Days Left</th><th>Status</th></tr></thead>
+        <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Runway (days)</th><th>Note</th></tr></thead>
         <tbody>
           <tr v-for="t in results.tank_projections" :key="t.tank">
             <td>{{ t.tank }}</td>
@@ -403,8 +661,11 @@
     </div>
 
     <!-- Activity baseline -->
-    <div class="section" v-if="results?.activity_results?.length">
-      <h2>⚡ Activity Engine — Daily Baseline</h2>
+    <div class="section results-plan-section" v-if="results?.activity_results?.length">
+      <h2>
+        ⚡ Expected daily use
+        <span class="plan-h2-sub">Baseline gallons per day before drift — your demand profile.</span>
+      </h2>
       <table class="results-table">
         <thead><tr><th>Activity</th><th>Fresh/day</th><th>Grey/day</th><th>Black/day</th><th>Attrib %</th></tr></thead>
         <tbody>
@@ -427,9 +688,10 @@
     </div>
 
     <!-- ── HEATMAP ──────────────────────────────────────────── -->
-    <div class="section" v-if="results?.daily_usage_by_day?.length">
+    <div class="section results-plan-section" v-if="results?.daily_usage_by_day?.length">
       <h2>
-        📅 Daily Usage Heatmap
+        📅 Demand by day
+        <span class="plan-h2-sub">See how each activity stacks across your stay (gal/day per stream).</span>
         <span class="drift-chip" v-if="results.drift > 0">
           🎲 drift {{ results.drift?.toFixed(2) }}
           <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">&nbsp;🔒 seed {{ results.drift_seed }}</template>
@@ -481,7 +743,7 @@
     </div>
 
     <div class="save-bar">
-      <button class="btn btn-secondary" @click="refreshResults">Refresh Results</button>
+      <button class="btn btn-secondary" @click="refreshResults">Refresh plan</button>
     </div>
   </div>
 
@@ -630,6 +892,39 @@ createApp({
     heatDayNums() { return Array.from({length: this.results?.target_days||0},(_,i)=>i+1); },
     streamKey()   { return this.heatStream==='black'?'back':this.heatStream; },
 
+    stabilityScorePct() {
+      const raw = Number(this.results?.stability_score?.score_pct);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.max(0, Math.min(100, raw));
+    },
+    supportStatusLabel() {
+      const fromApi = this.results?.stability_score?.status ?? this.results?.stability_score?.rating;
+      if (fromApi === 'On track' || fromApi === 'Needs attention' || fromApi === 'Not supported') {
+        return fromApi;
+      }
+      const pct = this.stabilityScorePct;
+      if (pct >= 80) return 'On track';
+      if (pct >= 50) return 'Needs attention';
+      return 'Not supported';
+    },
+    supportStatusToneClass() {
+      const pct = this.stabilityScorePct;
+      if (pct >= 80) return 'tone-on-track';
+      if (pct >= 50) return 'tone-needs-attention';
+      return 'tone-not-supported';
+    },
+    planOutlookHeadline() {
+      const s = this.supportStatusLabel;
+      if (s === 'On track') return 'Comfortable margin';
+      if (s === 'Needs attention') return 'Tight — plan stops';
+      return 'Below trip target';
+    },
+    planIntroLead() {
+      const d = this.results?.target_days;
+      const n = d != null && Number.isFinite(Number(d)) ? String(Math.round(Number(d))) : '—';
+      return `You’re sketching a <span class="mono">${n}-day</span> stay. Tune people, tanks, and habits on <strong>Input</strong>, then refresh — we map tanks, timing, and levers you can pull.`;
+    },
+
     // From backend API (Daily Usage Heatmap calculations)
     heatRange() {
       const ranges = this.results?.heat_ranges?.[this.streamKey];
@@ -661,6 +956,17 @@ createApp({
     realtimeHeatRange() {
       const ranges = this.realtime?.heat_ranges?.[this.realtimeStreamKey];
       return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
+    },
+    actionGroups() {
+      const actions = this.results?.recommended_actions ?? [];
+      const pick = (...cats) => actions.filter(a => cats.includes(a.category));
+      return [
+        { label: 'Where you’re short', actions: pick('gap_summary') },
+        { label: 'Before wheels roll', actions: pick('starting_state') },
+        { label: 'On the road — services', actions: pick('service_stop') },
+        { label: 'Equipment & settings', actions: pick('feature_toggle') },
+        { label: 'Lighter usage', actions: pick('activity_reduction') },
+      ];
     },
   },
 
@@ -745,7 +1051,7 @@ createApp({
         this.normalizeInputsBeforeSave();
         const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
         if (!r.ok) throw new Error(await r.text());
-        this.saveMsg='Saved. Results updated.';
+        this.saveMsg='Saved. Plan updated.';
         await this.refreshResults();
       } catch(e) { this.saveMsg='Save failed: '+e.message; this.saveError=true; }
       finally { this.saving=false; }
@@ -764,6 +1070,29 @@ createApp({
       if (s.includes('Full Autonomy')) return 'status-ok';
       if (s.includes('Low')||s.includes('Full')||s.includes('Good')||s.includes('Marginal')) return 'status-warn';
       return 'status-bad';
+    },
+    waterCardStatus(tank) {
+      const limiting = this.results?.stability_score?.limiting_tank;
+      if (limiting === tank) return tank === 'Fresh' ? 'Low' : 'Getting full';
+      return 'Ok';
+    },
+    waterCardIcon(tank) {
+      const status = this.waterCardStatus(tank);
+      if (status === 'Ok') return '✓';
+      return '⚠';
+    },
+    waterCardTone(tank) {
+      return this.waterCardStatus(tank) === 'Ok' ? 'ok' : 'warn';
+    },
+    waterCardPlanFoot(tank) {
+      const limiting = this.results?.stability_score?.limiting_tank;
+      if (limiting !== tank) return 'Extra margin';
+      return tank === 'Fresh' ? 'Refill timing' : 'Dump timing';
+    },
+    waterCardPlanIcon(tank) {
+      const limiting = this.results?.stability_score?.limiting_tank;
+      if (limiting !== tank) return '○';
+      return '→';
     },
 
     // ── Heatmap ─────────────────────────────────────────────
@@ -879,6 +1208,25 @@ createApp({
       return row.activity + ' · Day ' + this.realtimeDay + ' · ' + this.realtimeHeatStream + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
     },
     drawRealtimeScale() { /* no gradient; uniform colours */ },
+
+    actionIcon(category) {
+      return {
+        gap_summary:       '⚠️',
+        service_stop:      '🛑',
+        starting_state:    '🪣',
+        feature_toggle:    '♻️',
+        activity_reduction:'✂️',
+      }[category] ?? '💡';
+    },
+    actionCatLabel(category) {
+      return {
+        gap_summary:        'Shortfall',
+        service_stop:       'Service',
+        starting_state:     'Departure',
+        feature_toggle:     'Setup',
+        activity_reduction: 'Usage',
+      }[category] ?? category;
+    },
   },
 }).mount('#app');
 </script>

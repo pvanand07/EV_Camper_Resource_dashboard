@@ -3,6 +3,7 @@ FastAPI backend for Water Intelligence Engine v2.
 Exposes editable inputs and computed results.
 """
 
+import math
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -24,7 +25,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def index():
-    return FileResponse(Path(__file__).parent / "index.html")
+    return FileResponse(Path(__file__).parent / "static" / "v0" / "0.2.html")
 
 
 def _cors_allow_origins() -> list[str]:
@@ -165,6 +166,333 @@ def _heatmap_groups(daily_usage_by_day: list) -> list:
     ]
 
 
+def _projection_available_gallons(projection: dict) -> float:
+    if not projection:
+        return 0.0
+    if projection["tank"] == "Fresh":
+        return max(0.0, float(projection.get("current_gal") or 0.0))
+    return max(0.0, float(projection.get("capacity_gal") or 0.0) - float(projection.get("current_gal") or 0.0))
+
+
+def _projection_daily_load(projection: dict) -> float:
+    if not projection:
+        return 0.0
+    delta = float(projection.get("daily_delta_gal") or 0.0)
+    return abs(delta) if projection["tank"] == "Fresh" else max(0.0, delta)
+
+
+def _days_from_projection(projection: dict, daily_load: float | None = None) -> float:
+    if not projection:
+        return 0.0
+    load = _projection_daily_load(projection) if daily_load is None else float(daily_load)
+    if load <= 0:
+        return math.inf
+    return _projection_available_gallons(projection) / load
+
+
+def _activity_stream_key(tank: str) -> str:
+    return {
+        "Fresh": "daily_fresh_gal",
+        "Grey": "grey_added_gal",
+        "Black": "black_added_gal",
+    }[tank]
+
+
+def _service_day(days_available: float, target_days: int) -> int:
+    if target_days <= 0:
+        return 1
+    return max(1, min(int(target_days), int(math.floor(max(0.0, days_available))) + 1))
+
+
+def _activity_action_copy(activity_name: str, tank: str) -> tuple[str, str]:
+    by_tank = {
+        "Fresh": {
+            "Shower": (
+                "Reduce shower duration or shower frequency",
+                "Showers are the biggest fresh-water driver right now.",
+            ),
+            "Kitchen Sink": (
+                "Reduce kitchen sink water use",
+                "Kitchen sink use is the biggest fresh-water driver right now.",
+            ),
+            "Bathroom Sink": (
+                "Reduce bathroom sink water use",
+                "Bathroom sink use is one of the main fresh-water drivers right now.",
+            ),
+            "Toilet": (
+                "Reduce toilet fresh-water demand",
+                "Lower flush volume where practical, especially if grey water reuse is unavailable.",
+            ),
+            "Drinking (Adults)": (
+                "Reduce adult drinking water drawn from the tank",
+                "Bring separate drinking water or refill bottles off-board where possible.",
+            ),
+            "Drinking (Children)": (
+                "Reduce children's drinking water drawn from the tank",
+                "Bring separate drinking water or refill bottles off-board where possible.",
+            ),
+        },
+        "Grey": {
+            "Shower": (
+                "Reduce shower duration or shower frequency",
+                "Showers are the biggest grey-tank contributor right now.",
+            ),
+            "Kitchen Sink": (
+                "Reduce kitchen sink water use",
+                "Kitchen sink use is the biggest grey-tank contributor right now.",
+            ),
+            "Bathroom Sink": (
+                "Reduce bathroom sink water use",
+                "Bathroom sink use is one of the main grey-tank contributors right now.",
+            ),
+        },
+        "Black": {
+            "Toilet": (
+                "Reduce toilet usage where possible",
+                "Use external facilities when available or reduce flush frequency where practical.",
+            ),
+        },
+    }
+    canned = by_tank.get(tank, {})
+    if activity_name in canned:
+        return canned[activity_name]
+    return (
+        f"Reduce {activity_name.lower()} demand",
+        f"Lower {activity_name.lower()} usage to reduce {tank.lower()} load during the stay.",
+    )
+
+
+def _build_recommended_actions(
+    stability_score: dict | None,
+    tank_projections: list[dict],
+    activity_results: list[dict],
+    target_days: int,
+    greywater_recycle: bool,
+) -> list[dict]:
+    if not stability_score:
+        return []
+
+    limiting_tank = stability_score.get("limiting_tank")
+    limiting_days = float(stability_score.get("limiting_days") or 0.0)
+    if not limiting_tank or limiting_days >= target_days:
+        return []
+
+    projection_by_tank = {row["tank"]: row for row in tank_projections}
+    limiting_projection = projection_by_tank.get(limiting_tank)
+    if not limiting_projection:
+        return []
+
+    limiting_load = _projection_daily_load(limiting_projection)
+    available_gallons = _projection_available_gallons(limiting_projection)
+    if limiting_load <= 0 or target_days <= 0:
+        return []
+
+    gap_days = max(0.0, target_days - limiting_days)
+    required_daily_reduction = max(0.0, limiting_load - (available_gallons / target_days))
+    required_reduction_pct = (required_daily_reduction / limiting_load * 100.0) if limiting_load > 0 else 0.0
+    extra_capacity_needed = max(0.0, target_days * limiting_load - available_gallons)
+    actions: list[dict] = []
+
+    def add_action(
+        category: str,
+        title: str,
+        summary: str,
+        estimated_days_gain: float,
+        estimated_daily_change_gal: float = 0.0,
+        tank: str | None = None,
+        activity_name: str | None = None,
+    ) -> None:
+        actions.append({
+            "priority": len(actions) + 1,
+            "category": category,
+            "tank": tank or limiting_tank,
+            "activity_name": activity_name,
+            "title": title,
+            "summary": summary,
+            "estimated_days_gain": round(max(0.0, estimated_days_gain), 2),
+            "estimated_daily_change_gal": round(max(0.0, estimated_daily_change_gal), 2),
+        })
+
+    add_action(
+        category="gap_summary",
+        title=f"Close the {limiting_tank.lower()} gap",
+        summary=(
+            f"You are short by {gap_days:.2f} days. To reach {target_days} days, "
+            f"reduce {limiting_tank.lower()} load by about {required_daily_reduction:.2f} gal/day "
+            f"({required_reduction_pct:.0f}%) or create about {extra_capacity_needed:.1f} gal "
+            f"of additional usable {limiting_tank.lower()} margin."
+        ),
+        estimated_days_gain=gap_days,
+        estimated_daily_change_gal=required_daily_reduction,
+    )
+
+    fresh_projection = projection_by_tank.get("Fresh")
+    grey_projection = projection_by_tank.get("Grey")
+    black_projection = projection_by_tank.get("Black")
+    total_fresh = sum(float(r.get("daily_fresh_gal") or 0.0) for r in activity_results)
+    total_grey = sum(float(r.get("grey_added_gal") or 0.0) for r in activity_results)
+    total_black = sum(float(r.get("black_added_gal") or 0.0) for r in activity_results)
+    toilet_fresh = next(
+        (float(r.get("daily_fresh_gal") or 0.0) for r in activity_results if r.get("activity_name") == "Toilet"),
+        0.0,
+    )
+
+    if limiting_tank == "Fresh":
+        extra_start_gallons = max(
+            0.0,
+            float(limiting_projection.get("capacity_gal") or 0.0) - float(limiting_projection.get("current_gal") or 0.0),
+        )
+        if extra_start_gallons > 0:
+            gain_days = extra_start_gallons / limiting_load
+            add_action(
+                category="starting_state",
+                tank="Fresh",
+                title="Top up the fresh tank before departure",
+                summary=(
+                    f"Starting with {extra_start_gallons:.1f} more gal in fresh water would add about "
+                    f"{gain_days:.2f} days of autonomy."
+                ),
+                estimated_days_gain=gain_days,
+            )
+
+        refill_day = _service_day(limiting_days, target_days)
+        refill_amount = min(
+            float(limiting_projection.get("capacity_gal") or 0.0),
+            max(extra_capacity_needed, required_daily_reduction),
+        )
+        refill_gain = float(limiting_projection.get("capacity_gal") or 0.0) / limiting_load
+        add_action(
+            category="service_stop",
+            tank="Fresh",
+            title=f"Must refill fresh water on day {refill_day} of your trip",
+            summary=(
+                f"At the current burn rate, fresh water runs out around day {limiting_days:.2f}. "
+                f"Plan a refill stop by day {refill_day}; adding about {refill_amount:.1f} gal would cover the gap, "
+                f"while a full refill would extend autonomy by about {refill_gain:.2f} days."
+            ),
+            estimated_days_gain=refill_gain,
+        )
+    else:
+        reclaimable_gallons = max(0.0, float(limiting_projection.get("current_gal") or 0.0))
+        if reclaimable_gallons > 0:
+            gain_days = reclaimable_gallons / limiting_load
+            add_action(
+                category="starting_state",
+                tank=limiting_tank,
+                title=f"Empty the {limiting_tank.lower()} tank before departure",
+                summary=(
+                    f"Removing the current {reclaimable_gallons:.1f} gal load from the {limiting_tank.lower()} tank "
+                    f"would add about {gain_days:.2f} days of usable margin."
+                ),
+                estimated_days_gain=gain_days,
+            )
+
+    # Waste tanks: recommend service whenever autonomy falls short of the target stay,
+    # not only when that tank is the single limiting constraint (e.g. fresh may fail first).
+    grey_days_val = float(stability_score.get("grey_days") or 0.0)
+    if grey_projection and grey_days_val < target_days:
+        g_load = _projection_daily_load(grey_projection)
+        if g_load > 0:
+            grey_service_day = _service_day(grey_days_val, target_days)
+            grey_cap = float(grey_projection.get("capacity_gal") or 0.0)
+            grey_service_gain = grey_cap / g_load
+            add_action(
+                category="service_stop",
+                tank="Grey",
+                title="Plan one grey tank service during the stay",
+                summary=(
+                    f"Grey capacity is projected to fill around day {grey_days_val:.2f}, before your "
+                    f"{target_days}-day target. Plan a dump during the stay (by day {grey_service_day} to stay ahead). "
+                    f"One full service restores about {grey_cap:.1f} gal and adds about {grey_service_gain:.2f} days "
+                    f"of grey margin."
+                ),
+                estimated_days_gain=grey_service_gain,
+            )
+
+    black_days_val = float(stability_score.get("black_days") or 0.0)
+    if black_projection and black_days_val < target_days:
+        b_load = _projection_daily_load(black_projection)
+        if b_load > 0:
+            black_service_day = _service_day(black_days_val, target_days)
+            black_cap = float(black_projection.get("capacity_gal") or 0.0)
+            black_service_gain = black_cap / b_load
+            add_action(
+                category="service_stop",
+                tank="Black",
+                title=f"Plan one black tank service on day {black_service_day}",
+                summary=(
+                    f"Black capacity is projected to fill around day {black_days_val:.2f}, before your "
+                    f"{target_days}-day target. Schedule a dump on day {black_service_day} to stay ahead. "
+                    f"One full service restores about {black_cap:.1f} gal and adds about {black_service_gain:.2f} days "
+                    f"of black capacity."
+                ),
+                estimated_days_gain=black_service_gain,
+            )
+
+    if not greywater_recycle and fresh_projection and grey_projection:
+        recycled_gallons = min(toilet_fresh, total_grey)
+        if recycled_gallons > 0:
+            fresh_days = _days_from_projection(fresh_projection, total_fresh - recycled_gallons)
+            grey_days = _days_from_projection(grey_projection, total_grey - recycled_gallons)
+            black_days = _days_from_projection(black_projection, total_black) if black_projection else math.inf
+            new_limiting_days = min(fresh_days, grey_days, black_days)
+            gain_days = new_limiting_days - limiting_days
+            if gain_days > 0.05:
+                add_action(
+                    category="feature_toggle",
+                    title="Turn on grey water reuse for toilet flushing",
+                    summary=(
+                        f"Reusing up to {recycled_gallons:.2f} gal/day of grey water for toilet flushing would "
+                        f"improve overall feasibility by about {gain_days:.2f} days."
+                    ),
+                    estimated_days_gain=gain_days,
+                    estimated_daily_change_gal=recycled_gallons,
+                )
+
+    stream_key = _activity_stream_key(limiting_tank)
+    contributors = sorted(
+        (
+            {
+                "activity_name": row["activity_name"],
+                "stream_load": float(row.get(stream_key) or 0.0),
+                "stream_share_pct": (float(row.get(stream_key) or 0.0) / limiting_load * 100.0) if limiting_load > 0 else 0.0,
+            }
+            for row in activity_results
+            if float(row.get(stream_key) or 0.0) > 0
+        ),
+        key=lambda row: row["stream_load"],
+        reverse=True,
+    )
+
+    for contributor in contributors[:2]:
+        stream_load = contributor["stream_load"]
+        if stream_load <= 0:
+            continue
+        cut_pct = min(60, max(15, int(math.ceil((required_daily_reduction / stream_load) * 100 / 5.0) * 5)))
+        saved_gallons = stream_load * (cut_pct / 100.0)
+        improved_days = _days_from_projection(limiting_projection, max(0.0, limiting_load - saved_gallons))
+        gain_days = improved_days - limiting_days
+        if gain_days <= 0.05:
+            continue
+        title, hint = _activity_action_copy(contributor["activity_name"], limiting_tank)
+        add_action(
+            category="activity_reduction",
+            tank=limiting_tank,
+            activity_name=contributor["activity_name"],
+            title=title,
+            summary=(
+                f"{hint} {contributor['activity_name']} currently drives about "
+                f"{contributor['stream_share_pct']:.0f}% of the {limiting_tank.lower()} load. "
+                f"Reducing it by about {cut_pct}% would trim roughly {saved_gallons:.2f} gal/day and add "
+                f"about {gain_days:.2f} days."
+            ),
+            estimated_days_gain=gain_days,
+            estimated_daily_change_gal=saved_gallons,
+        )
+
+    return actions
+
+
 # ─── API Endpoints ───────────────────────────────────────────────────────────
 
 @app.get("/api/inputs")
@@ -297,6 +625,8 @@ def get_results():
         cur.execute("SELECT * FROM stability_score LIMIT 1")
         row = cur.fetchone()
         stability_score = dict(row) if row else None
+        if stability_score and "status" not in stability_score and stability_score.get("rating") is not None:
+            stability_score["status"] = stability_score["rating"]
 
         # Environment values for display
         cur.execute("SELECT target_autonomy_days, drift, drift_seed, greywater_recycle FROM tank_environment LIMIT 1")
@@ -332,6 +662,13 @@ def get_results():
         # Calculate stay_supported based on projected limiting days vs target
         limiting_days = stability_score.get("limiting_days") if stability_score else None
         stay_supported = limiting_days is not None and limiting_days >= target_days
+        recommended_actions = _build_recommended_actions(
+            stability_score=stability_score,
+            tank_projections=tank_projections,
+            activity_results=activity_results,
+            target_days=target_days,
+            greywater_recycle=greywater_recycle,
+        )
 
         return {
             "activity_results": activity_results,
@@ -345,6 +682,7 @@ def get_results():
             "heat_ranges": heat_ranges,
             "heat_groups": heat_groups,
             "stay_supported": stay_supported,
+            "recommended_actions": recommended_actions,
         }
 
 
@@ -356,6 +694,25 @@ def _realtime_baseline(activity_results: list) -> dict:
     grey = sum(r.get("grey_added_gal") or 0 for r in activity_results)
     black = sum(r.get("black_added_gal") or 0 for r in activity_results)
     return {"fresh_gal": round(fresh, 2), "grey_gal": round(grey, 2), "black_gal": round(black, 2)}
+
+
+def _realtime_toilet_eff_fresh(activity_results: list) -> float:
+    for r in activity_results:
+        if r.get("activity_name") == "Toilet":
+            return float(r.get("daily_fresh_gal") or 0)
+    return 0.0
+
+
+def _realtime_toilet_gross_fresh_for_day(raw_rows: list, day_num: int) -> float:
+    for r in raw_rows:
+        if r["activity_name"] == "Toilet" and r["day_num"] == day_num:
+            return float(r["fresh_gal"])
+    return 0.0
+
+
+def _realtime_gross_fresh_baseline(baseline: dict, toilet_eff: float, toilet_gross_day: float) -> float:
+    """Match summed daily_usage fresh: activity_result uses net toilet fresh when greywater recycles."""
+    return round(float(baseline["fresh_gal"]) + max(0.0, toilet_gross_day - toilet_eff), 2)
 
 
 def _realtime_day_totals(raw_rows: list, day_num: int) -> dict:
@@ -424,6 +781,7 @@ def get_realtime():
             FROM daily_usage_by_day ORDER BY activity_name, day_num
         """)
         raw_rows = [dict(r) for r in cur.fetchall()]
+        toilet_eff_fresh = _realtime_toilet_eff_fresh(activity_results)
 
         # Build daily_usage_by_day (pivot) for heatmap reuse
         by_activity = {}
@@ -488,7 +846,11 @@ def get_realtime():
                 "black_gal": running_black,
             }
 
-            alert_fresh = baseline["fresh_gal"] > 0 and totals["fresh_gal"] > baseline["fresh_gal"] * threshold
+            toilet_gross_day = _realtime_toilet_gross_fresh_for_day(raw_rows, day_num)
+            baseline_fresh_gross = _realtime_gross_fresh_baseline(
+                baseline, toilet_eff_fresh, toilet_gross_day
+            )
+            alert_fresh = baseline_fresh_gross > 0 and totals["fresh_gal"] > baseline_fresh_gross * threshold
             alert_grey = baseline["grey_gal"] > 0 and totals["grey_gal"] > baseline["grey_gal"] * threshold
             alert_black = baseline["black_gal"] > 0 and totals["black_gal"] > baseline["black_gal"] * threshold
             alert = alert_fresh or alert_grey or alert_black
@@ -501,7 +863,7 @@ def get_realtime():
             alerts_list = []
             stream_labels = {"fresh": "Fresh", "grey": "Grey", "black": "Black"}
             if alert_fresh:
-                pct = _pct_above(baseline["fresh_gal"], totals["fresh_gal"])
+                pct = _pct_above(baseline_fresh_gross, totals["fresh_gal"])
                 alerts_list.append({
                     "stream": "fresh",
                     "message": f"{stream_labels['fresh']} water usage is {pct}% more than usual",
