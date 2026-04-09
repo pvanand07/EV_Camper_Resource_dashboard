@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY api.py water_model.py index.html ./
+COPY . ./
 COPY static ./static
 
 EXPOSE 8000
