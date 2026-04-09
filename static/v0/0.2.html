@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>💧 Water Intelligence Engine</title>
+  <title>Water Intelligence Engine</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,11 +27,18 @@
     #app { max-width: 1040px; margin: 0 auto; padding: 1.5rem; }
     header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); position: relative; }
     h1 { font-size: 1.75rem; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
-    .version-selector { position: absolute; top: 0; right: 0; display: flex; align-items: center; gap: 0.5rem; }
+    .app-title { display: inline-flex; align-items: center; gap: 0.6rem; }
+    .app-title-logo { width: auto; height: 1em; object-fit: contain; }
+    .app-title-logo.logo-dark { display: none; }
+    @media (prefers-color-scheme: dark) {
+      .app-title-logo.logo-light { display: none; }
+      .app-title-logo.logo-dark { display: inline-block; }
+    }
+    .version-selector { position: fixed; top: 24px; right: 24px; display: flex; align-items: center; gap: 0.5rem; z-index: 20; }
     .version-selector label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
     .version-selector select { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; padding: 0.35rem 0.6rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; }
     .version-selector select:focus { outline: none; border-color: var(--accent); }
-    @media (max-width: 600px) { .version-selector { position: relative; justify-content: center; margin-top: 1rem; } }
+    @media (max-width: 600px) { .version-selector { position: relative; top: auto; right: auto; justify-content: center; margin-top: 1rem; } }
     .tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; }
     .tab { padding: 0.6rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500; color: var(--text-muted); transition: all 0.2s; }
     .tab:hover { color: var(--text); border-color: var(--accent-dim); }
@@ -333,7 +340,11 @@
         <option value="0.1" :selected="currentVersion === '0.1'">v0.1</option>
       </select>
     </div>
-    <h1>💧 Water Intelligence Engine</h1>
+    <h1 class="app-title">
+      <img src="/static/ACfuturelogo.png" alt="AC Future logo" class="app-title-logo logo-light" />
+      <img src="/static/ACfuturelogo1.png" alt="AC Future logo" class="app-title-logo logo-dark" />
+      <span>Water Intelligence Engine</span>
+    </h1>
   </header>
 
   <div class="tabs">
@@ -546,8 +557,8 @@
         >
           <span class="action-icon">{{ actionIcon(action.category) }}</span>
           <div class="action-body">
-            <span class="action-title">{{ action.title }}</span>
-            <span class="action-text">{{ action.summary }}</span>
+            <span class="action-title">{{ formatRecommendedActionText(action.title) }}</span>
+            <span class="action-text">{{ formatRecommendedActionText(action.summary) }}</span>
           </div>
           <span class="action-gain">+{{ action.estimated_days_gain?.toFixed(2) }} d</span>
         </div>
@@ -1114,6 +1125,12 @@ createApp({
         feature_toggle:    '♻️',
         activity_reduction:'✂️',
       }[category] ?? '💡';
+    },
+    formatRecommendedActionText(text) {
+      if (!text) return text;
+      return text.replace(/\b(fresh|grey|black)\s+tank(s)?\b/gi, (match, stream, plural = '') => {
+        return `${stream} water tank${plural}`;
+      });
     },
   },
 }).mount('#app');
