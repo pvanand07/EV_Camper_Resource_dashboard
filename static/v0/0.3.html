@@ -337,101 +337,128 @@
        LIGHT MODE
     ══════════════════════════════════════════════════════ */
     body.light-mode {
-      --bg-dark:    #f0f4f8;
+      --bg-dark:    #f8fafc;
       --bg-card:    #ffffff;
       --bg-input:   #f1f5f9;
       --accent:     #0891b2;
       --accent-dim: #0e7490;
       --text:       #0f172a;
       --text-muted: #64748b;
-      --border:     #cbd5e1;
+      --border:     #e2e8f0;
       --success:    #059669;
       --warning:    #d97706;
       --danger:     #dc2626;
     }
 
-    /* Active tab / day-btn: keep white text on dark-teal bg */
-    body.light-mode .tab.active    { color: #ffffff; }
+    /* Card elevation */
+    body.light-mode .section {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    /* Active tab / day-btn */
+    body.light-mode .tab.active     { color: #ffffff; }
     body.light-mode .day-btn.active { color: #ffffff; }
 
     /* Buttons */
-    body.light-mode .btn-primary { color: #ffffff; }
+    body.light-mode .btn-primary          { color: #ffffff; }
+    body.light-mode .btn-secondary        { background: #f1f5f9; border-color: #e2e8f0; color: #0f172a; }
 
-    /* Drift row (hardcoded dark bg) */
-    body.light-mode .drift-row { background: #e8f4f8; border-color: #b0d4e0; }
+    /* Drift row */
+    body.light-mode .drift-row            { background: #f0f9ff; border-color: rgba(8,145,178,0.22); }
+    body.light-mode .drift-value-badge    { background: rgba(217,119,6,0.10); border-color: rgba(217,119,6,0.28); color: #92400e; }
 
     /* Greywater row */
-    body.light-mode .greywater-row              { background: #ecfdf5; }
-    body.light-mode .greywater-row.active       { background: rgba(5,150,105,0.07); }
-    body.light-mode .greywater-label            { color: #059669; }
-    body.light-mode .greywater-savings          { color: rgba(5,150,105,0.85); }
+    body.light-mode .greywater-row        { background: #f0fdf4; border-color: rgba(5,150,105,0.22); }
+    body.light-mode .greywater-row.active { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.36); }
+    body.light-mode .greywater-label      { color: #059669; }
+    body.light-mode .greywater-savings    { color: rgba(5,150,105,0.85); }
 
     /* Results plan section */
-    body.light-mode .section.results-plan-section {
-      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-      border-color: #e2e8f0;
-    }
-    body.light-mode .section.results-plan-section > h2            { color: #0f172a; }
+    body.light-mode .section.results-plan-section         { background: #ffffff; border-color: #e2e8f0; }
+    body.light-mode .section.results-plan-section > h2    { color: #0f172a; }
     body.light-mode .water-resource-section.results-plan-section > h2 { color: #0f172a; }
 
-    /* Water cards */
+    /* Water cards — neutral white, status-driven tinting only */
     body.light-mode .water-card {
-      background: rgba(0,0,0,0.02);
-      box-shadow: inset 0 1px 0 rgba(0,0,0,0.04);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
     }
-    body.light-mode .water-card.limiting                   { background: rgba(217,119,6,0.06); }
-    body.light-mode .water-card.water-card-plan            { background: #f8fafc; border: 1px solid #e2e8f0; }
-    body.light-mode .water-card.water-card-plan.limiting   { background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.35); }
-    body.light-mode .water-card-title                      { color: #334155; }
-    body.light-mode .water-card-days                       { color: #0f172a; }
-    body.light-mode .water-card.limiting .water-card-days  { color: #d97706; }
-    body.light-mode .water-card-foot.ok                    { color: #475569; }
+    body.light-mode .water-card.water-card-plan           { background: #ffffff; border-color: #e2e8f0; }
+    body.light-mode .water-card-title                     { color: #334155; font-weight: 600; }
+    body.light-mode .water-card-days                      { color: #0f172a; }
+    body.light-mode .water-card-foot.ok                   { color: #64748b; }
+    body.light-mode .water-card-label                     { color: #d97706; }
 
-    /* Support status tones */
+    /* Limiting state */
+    body.light-mode .water-card.limiting,
+    body.light-mode .water-card.water-card-plan.limiting  { background: rgba(217,119,6,0.05); border-color: rgba(217,119,6,0.28); }
+    body.light-mode .water-card.limiting .water-card-days { color: #d97706; }
+
+    /* Outlook card — semantic status tones only */
+    body.light-mode .water-support-status-card.tone-on-track      { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.24); }
+    body.light-mode .water-support-status-card.tone-needs-attention{ background: rgba(217,119,6,0.06); border-color: rgba(217,119,6,0.24); }
+    body.light-mode .water-support-status-card.tone-not-supported  { background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.24); }
+
     body.light-mode .water-support-status-card.tone-on-track       .support-status-label { color: #059669; }
     body.light-mode .water-support-status-card.tone-needs-attention .support-status-label { color: #d97706; }
-    body.light-mode .water-support-status-card.tone-not-supported  .support-status-label { color: #dc2626; }
+    body.light-mode .water-support-status-card.tone-not-supported   .support-status-label { color: #dc2626; }
 
     /* Plan notes */
-    body.light-mode .water-status-note strong                       { color: #0f172a; }
-    body.light-mode .water-status-note.plan-note                    { background: #f8fafc; border-color: #e2e8f0; }
-    body.light-mode .water-status-note.plan-note strong             { color: #0f172a; }
-    body.light-mode .water-status-note.plan-note-ok                 { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.3); }
-    body.light-mode .water-status-note.plan-note-ok .plan-note-label  { color: rgba(5,150,105,0.9); }
-    body.light-mode .water-status-note.plan-note-gap                { background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.3); }
-    body.light-mode .water-status-note.plan-note-gap .plan-note-label { color: rgba(220,38,38,0.9); }
-    body.light-mode .water-status-note.plan-note-gap strong         { color: #b91c1c; }
+    body.light-mode .water-status-note strong                        { color: #0f172a; }
+    body.light-mode .water-status-note.plan-note                     { background: #f8fafc; border-color: #e2e8f0; }
+    body.light-mode .water-status-note.plan-note strong              { color: #0f172a; }
+    body.light-mode .water-status-note.plan-note-ok                  { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.28); }
+    body.light-mode .water-status-note.plan-note-ok .plan-note-label { color: rgba(5,150,105,0.9); }
+    body.light-mode .water-status-note.plan-note-gap                 { background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.28); }
+    body.light-mode .water-status-note.plan-note-gap .plan-note-label{ color: rgba(220,38,38,0.9); }
+    body.light-mode .water-status-note.plan-note-gap strong          { color: #b91c1c; }
 
     /* Action rows */
-    body.light-mode .action-row   { background: rgba(0,0,0,0.03); }
+    body.light-mode .action-row   { background: rgba(0,0,0,0.025); }
     body.light-mode .action-title { color: #0f172a; }
-    body.light-mode .action-gain  { background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.3); color: #d97706; }
+    body.light-mode .action-gain  { background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.28); color: #d97706; }
 
     /* Chips */
-    body.light-mode .grey-chip  { color: #059669; }
-    body.light-mode .drift-chip { color: #d97706; }
+    body.light-mode .grey-chip  { color: #059669; background: rgba(5,150,105,0.08); border-color: rgba(5,150,105,0.25); }
+    body.light-mode .drift-chip { color: #d97706; background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.22); }
 
     /* Stream toggle buttons */
-    body.light-mode .stream-btn                { background: #f1f5f9; color: #64748b; }
-    body.light-mode .stream-btn.active-fresh   { background: rgba(8,145,178,0.12); border-color: #0891b2; color: #0e7490; }
-    body.light-mode .stream-btn.active-grey    { background: rgba(100,116,139,0.12); border-color: #64748b; color: #475569; }
-    body.light-mode .stream-btn.active-black   { background: rgba(220,38,38,0.10); border-color: #dc2626; color: #b91c1c; }
+    body.light-mode .stream-btn              { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+    body.light-mode .stream-btn.active-fresh { background: rgba(8,145,178,0.12); border-color: #0891b2; color: #0e7490; }
+    body.light-mode .stream-btn.active-grey  { background: rgba(100,116,139,0.12); border-color: #64748b; color: #475569; }
+    body.light-mode .stream-btn.active-black { background: rgba(220,38,38,0.10); border-color: #dc2626; color: #b91c1c; }
 
     /* Heatmap group headers & special rows */
-    body.light-mode .heatmap tr.grp-hdr td               { background: #e2e8f0; color: #475569; border-top-color: #cbd5e1; }
-    body.light-mode .heatmap tr.grp-hdr td.act-label     { background: #e2e8f0; }
-    body.light-mode .heatmap tr.grp-sub td               { background: rgba(200,214,229,0.5); }
-    body.light-mode .heatmap tr.grp-sub td.act-label     { background: rgba(200,214,229,0.5); color: #475569; }
-    body.light-mode .heatmap tr.grand td                 { background: #f1f5f9; }
-    body.light-mode .heatmap tr.grand td.act-label       { background: #f1f5f9; color: #0f172a; font-weight: 700; }
-    body.light-mode .sub-cell   { background: rgba(200,214,229,0.7); color: #475569; }
-    body.light-mode .grand-cell { background: rgba(8,145,178,0.1); border-color: rgba(8,145,178,0.3); color: #0891b2; }
+    body.light-mode .heatmap tr.grp-hdr td               { background: #f1f5f9; color: #475569; border-top-color: #e2e8f0; }
+    body.light-mode .heatmap tr.grp-hdr td.act-label     { background: #f1f5f9; }
+    body.light-mode .heatmap tr.grp-sub td               { background: rgba(200,214,229,0.50); }
+    body.light-mode .heatmap tr.grp-sub td.act-label     { background: rgba(200,214,229,0.50); color: #475569; }
+    body.light-mode .heatmap tr.grand td                 { background: #f8fafc; }
+    body.light-mode .heatmap tr.grand td.act-label       { background: #f8fafc; color: #0f172a; font-weight: 700; }
+    body.light-mode .sub-cell   { background: rgba(200,214,229,0.70); color: #475569; }
+    body.light-mode .grand-cell { background: rgba(8,145,178,0.10); border-color: rgba(8,145,178,0.28); color: #0891b2; }
 
     /* Range slider thumb border */
     body.light-mode input[type="range"]::-webkit-slider-thumb { border-color: var(--bg-dark); }
 
     /* Realtime alert */
     body.light-mode .realtime-alert { background: rgba(220,38,38,0.07); border-color: rgba(220,38,38,0.35); }
+    body.light-mode .realtime-stat  { background: #f8fafc; border-color: #e2e8f0; }
+    body.light-mode .realtime-h3    { color: #64748b; }
+
+    /* Form inputs */
+    body.light-mode .form-row input          { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
+    body.light-mode .form-row input:focus    { border-color: #0891b2; box-shadow: 0 0 0 2px rgba(8,145,178,0.18); }
+    body.light-mode td input, body.light-mode td select { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
+    body.light-mode .seed-input              { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
+    body.light-mode .seed-clear:hover        { border-color: var(--danger); color: var(--danger); }
+
+    /* Tables */
+    body.light-mode th { color: #64748b; }
+    body.light-mode td { border-bottom-color: #f1f5f9; }
 
     /* Inline-styled greywater recycled spans */
     body.light-mode [style*="color:#34d399"] { color: #059669 !important; }
@@ -474,7 +501,7 @@
   <div class="panel" :class="{ active: tab==='input' }">
 
     <div class="section section-people" v-if="inputs">
-      <h2>📋 Section 1 — People Inputs <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
+      <h2>Section 1 — People <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
       <div class="form-grid">
         <div class="form-row" v-for="u in inputs.user_types" :key="u.name+u.is_child">
           <label>{{ u.name }}<span v-if="u.is_child"> (children)</span></label>
@@ -485,7 +512,7 @@
     </div>
 
     <div class="section section-tank" v-if="inputs?.tank_environment">
-      <h2>🛢️ Section 2 — Tank & Environment</h2>
+      <h2>Section 2 — Tank & Environment</h2>
       <div class="form-grid">
         <div class="form-row"><label>Fresh Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" /></div>
         <div class="form-row"><label>Grey Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" /></div>
@@ -499,7 +526,7 @@
         <div class="drift-row">
           <div class="drift-top">
             <div>
-              <div class="drift-label">🎲 Behavioral Drift</div>
+              <div class="drift-label">Behavioral Drift</div>
               <div class="drift-desc">Models day-to-day unpredictability via N(1.0, σ=drift/2) clipped to [1−drift, 1+drift].</div>
             </div>
             <div class="drift-value-badge">{{ driftPct }}</div>
@@ -514,12 +541,12 @@
           </div>
           <div class="drift-band-label" v-else style="color:#475569;">Drift = 0 — all days use exact baseline (deterministic)</div>
           <div class="seed-row" v-if="inputs.tank_environment.drift > 0">
-            <label class="seed-label">🔒 Random Seed <span class="seed-hint">integer = locked &amp; reproducible &nbsp;|&nbsp; blank = fresh random each run</span></label>
+            <label class="seed-label">Random Seed <span class="seed-hint">integer = locked &amp; reproducible &nbsp;|&nbsp; blank = fresh random each run</span></label>
             <div class="seed-input-wrap">
               <input type="number" step="1" min="0" class="seed-input" :value="inputs.tank_environment.drift_seed ?? ''" @input="onSeedInput($event)" placeholder="e.g. 42" />
               <button class="seed-clear" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined" @click="inputs.tank_environment.drift_seed = null">✕</button>
-              <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">🔒 locked</span>
-              <span class="seed-status unlocked" v-else>🎲 random</span>
+              <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">locked</span>
+              <span class="seed-status unlocked" v-else>random</span>
             </div>
           </div>
         </div>
@@ -545,7 +572,7 @@
     </div>
 
     <div class="section section-behavior" v-if="inputs?.behavior_multipliers">
-      <h2>🧠 Section 3 — Behavior Multipliers</h2>
+      <h2>Section 3 — Behavior Multipliers</h2>
       <table>
         <thead><tr><th>User Type</th><th>Count</th><th>Shower Mult</th><th>Sink Mult</th><th>Toilet Mult</th></tr></thead>
         <tbody>
@@ -560,7 +587,7 @@
     </div>
 
     <div class="section section-activity" v-if="inputs?.activities">
-      <h2>⚡ Section 4 — Activity Engine</h2>
+      <h2>Section 4 — Activity Engine</h2>
       <table>
         <thead><tr><th>Activity</th><th>Flow (gal/min)</th><th>Duration (min)</th><th>Events/Day</th><th>Gal/Unit</th><th>Grey</th><th>Black</th></tr></thead>
         <tbody>
@@ -598,7 +625,7 @@
 
     <!-- Water outlook -->
     <div class="section water-resource-section results-plan-section" v-if="results?.stability_score">
-      <h2>💧 How far your tanks will carry you</h2>
+      <h2>Tank Runway</h2>
       <div class="water-resource-cards">
         <div
           class="water-card water-card-plan water-support-status-card"
@@ -685,9 +712,9 @@
     <!-- Tank projections -->
     <div class="section results-plan-section" v-if="results?.tank_projections?.length">
       <h2>
-        🔋 Tank capacity &amp; daily change
+        Tank Projections
         <span class="plan-h2-sub">Numbers behind the outlook — deterministic baseline.</span>
-        <span class="grey-chip" v-if="results.greywater_recycle">♻️ greywater recycling on</span>
+        <span class="grey-chip" v-if="results.greywater_recycle">♻ recycling on</span>
       </h2>
       <table class="results-table">
         <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Runway (days)</th><th>Note</th></tr></thead>
@@ -707,7 +734,7 @@
     <!-- Activity baseline -->
     <div class="section results-plan-section" v-if="results?.activity_results?.length">
       <h2>
-        ⚡ Expected daily use
+        Expected Daily Use
         <span class="plan-h2-sub">Baseline gallons per day before drift — your demand profile.</span>
       </h2>
       <table class="results-table">
@@ -734,19 +761,19 @@
     <!-- ── HEATMAP ──────────────────────────────────────────── -->
     <div class="section results-plan-section" v-if="results?.daily_usage_by_day?.length">
       <h2>
-        📅 Demand by day
+        Demand by Day
         <span class="plan-h2-sub">See how each activity stacks across your stay (gal/day per stream).</span>
         <span class="drift-chip" v-if="results.drift > 0">
-          🎲 drift {{ results.drift?.toFixed(2) }}
-          <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">&nbsp;🔒 seed {{ results.drift_seed }}</template>
-          <template v-else>&nbsp;🎲 random</template>
+          drift {{ results.drift?.toFixed(2) }}
+          <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">&nbsp;· seed {{ results.drift_seed }}</template>
+          <template v-else>&nbsp;· random</template>
         </span>
       </h2>
 
       <div class="stream-toggle">
-        <button class="stream-btn" :class="{'active-fresh': heatStream==='fresh'}" @click="heatStream='fresh'">💧 Fresh</button>
-        <button class="stream-btn" :class="{'active-grey':  heatStream==='grey'}"  @click="heatStream='grey'">🪣 Grey</button>
-        <button class="stream-btn" :class="{'active-black': heatStream==='black'}" @click="heatStream='black'">🚽 Black</button>
+        <button class="stream-btn" :class="{'active-fresh': heatStream==='fresh'}" @click="heatStream='fresh'">Fresh</button>
+        <button class="stream-btn" :class="{'active-grey':  heatStream==='grey'}"  @click="heatStream='grey'">Grey</button>
+        <button class="stream-btn" :class="{'active-black': heatStream==='black'}" @click="heatStream='black'">Black</button>
       </div>
 
       <div class="heatmap-wrap">
@@ -795,8 +822,8 @@
   <div class="panel" :class="{ active: tab==='realtime' }">
     <div class="section" v-if="realtime">
       <h2>
-        📡 Realtime — Day view
-        <span class="grey-chip" v-if="realtime.greywater_recycle">♻️ greywater recycling on</span>
+        Realtime — Day View
+        <span class="grey-chip" v-if="realtime.greywater_recycle">♻ recycling on</span>
       </h2>
       <div class="day-switcher">
         <button
@@ -821,20 +848,20 @@
         <div :key="'day-' + realtimeDay">
         <h3 class="realtime-h3">Tank levels (end of day, capped at capacity)</h3>
         <div class="realtime-stats" v-if="currentDayData?.tank_levels && realtime?.tank_capacities">
-          <div class="realtime-stat"><span class="label">💧 Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
-          <div class="realtime-stat"><span class="label">🪣 Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
-          <div class="realtime-stat"><span class="label">🚽 Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
           <div class="realtime-stat" v-if="realtime.greywater_recycle && realtimeDay > 1 && currentDayData.grey_recycled_gal > 0" style="border-color:rgba(52,211,153,0.35);">
-            <span class="label" style="color:#34d399;">♻️ Grey recycled</span>
+            <span class="label" style="color:#34d399;">♻ Recycled</span>
             <span class="value" style="color:#34d399;">{{ currentDayData.grey_recycled_gal?.toFixed(2) }} gal → toilet</span>
           </div>
         </div>
 
         <h3 class="realtime-h3">Total usage today (Day {{ realtimeDay }})</h3>
         <div class="realtime-stats">
-          <div class="realtime-stat"><span class="label">💧 Fresh</span><span class="value">{{ currentDayData.stats.fresh_gal?.toFixed(2) }} gal</span></div>
-          <div class="realtime-stat"><span class="label">🪣 Grey</span><span class="value">{{ currentDayData.stats.grey_gal?.toFixed(2) }} gal</span></div>
-          <div class="realtime-stat"><span class="label">🚽 Black</span><span class="value">{{ currentDayData.stats.black_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Fresh</span><span class="value">{{ currentDayData.stats.fresh_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Grey</span><span class="value">{{ currentDayData.stats.grey_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Black</span><span class="value">{{ currentDayData.stats.black_gal?.toFixed(2) }} gal</span></div>
           <div class="realtime-stat baseline"><span class="label">Baseline (daily)</span><span class="value">{{ currentDayData.baseline?.fresh_gal?.toFixed(2) }} / {{ currentDayData.baseline?.grey_gal?.toFixed(2) }} / {{ currentDayData.baseline?.black_gal?.toFixed(2) }} gal</span></div>
         </div>
 
@@ -882,9 +909,9 @@ const API = '/api';
 function streamStyle(stream, lightMode) {
   if (lightMode) {
     const map = {
-      fresh: { bg: 'rgba(8,145,178,0.14)',   color: '#0c4a6e', border: '1px solid rgba(8,145,178,0.40)' },
-      grey:  { bg: 'rgba(71,85,105,0.10)',    color: '#1e293b', border: '1px solid rgba(71,85,105,0.35)' },
-      back:  { bg: 'rgba(220,38,38,0.09)',    color: '#7f1d1d', border: '1px solid rgba(220,38,38,0.32)' },
+      fresh: { bg: 'rgba(8,145,178,0.10)',  color: '#0c4a6e', border: '1px solid rgba(8,145,178,0.32)' },
+      grey:  { bg: 'rgba(71,85,105,0.09)',  color: '#1e293b', border: '1px solid rgba(71,85,105,0.28)' },
+      back:  { bg: 'rgba(220,38,38,0.08)',  color: '#7f1d1d', border: '1px solid rgba(220,38,38,0.26)' },
     };
     return map[stream] ?? map.fresh;
   }
@@ -994,9 +1021,9 @@ createApp({
     },
     realtimeStreamCols() {
       return [
-        { streamKey: 'fresh', label: '💧 Fresh' },
-        { streamKey: 'grey', label: '🪣 Grey' },
-        { streamKey: 'back', label: '🚽 Black' },
+        { streamKey: 'fresh', label: 'Fresh' },
+        { streamKey: 'grey',  label: 'Grey' },
+        { streamKey: 'back',  label: 'Black' },
       ];
     },
     realtimeStreamKey() {
@@ -1267,12 +1294,12 @@ createApp({
 
     actionIcon(category) {
       return {
-        gap_summary:       '⚠️',
-        service_stop:      '🛑',
-        starting_state:    '🪣',
-        feature_toggle:    '♻️',
-        activity_reduction:'✂️',
-      }[category] ?? '💡';
+        gap_summary:       '!',
+        service_stop:      '×',
+        starting_state:    '↑',
+        feature_toggle:    '↻',
+        activity_reduction:'↓',
+      }[category] ?? '·';
     },
     formatRecommendedActionText(text) {
       if (!text) return text;
