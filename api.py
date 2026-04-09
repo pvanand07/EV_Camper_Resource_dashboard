@@ -89,7 +89,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def index():
-    return FileResponse(Path(__file__).parent / "static" / "v0" / "0.2.html")
+    return FileResponse(Path(__file__).parent / "static" / "v0" / "0.3.html")
 
 
 def _cors_allow_origins() -> list[str]:
