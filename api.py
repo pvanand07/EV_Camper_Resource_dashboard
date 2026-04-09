@@ -81,7 +81,7 @@ async def lifespan(app: FastAPI):
             _db_conn = None
 
 
-app = FastAPI(title="Water Intelligence Engine v2 API", lifespan=lifespan)
+app = FastAPI(title="Water Intelligence Engine API", lifespan=lifespan)
 
 # Mount static files for versioned HTML
 app.mount("/static", StaticFiles(directory="static"), name="static")
