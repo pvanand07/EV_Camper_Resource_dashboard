@@ -75,8 +75,8 @@
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
     th { color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
-    td input { width: 100%; max-width: 90px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.35rem 0.5rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
-    td input:focus { outline: none; border-color: var(--accent); }
+    td input, td select { width: 100%; max-width: 90px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.35rem 0.5rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
+    td input:focus, td select:focus { outline: none; border-color: var(--accent); }
 
     /* Buttons */
     .btn { font-family: 'Outfit', sans-serif; font-weight: 500; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; }
@@ -334,7 +334,6 @@
       </select>
     </div>
     <h1>💧 Water Intelligence Engine v2</h1>
-    <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.25rem;">Model your trip, then shape a water plan from real tank math</p>
   </header>
 
   <div class="tabs">
@@ -435,7 +434,7 @@
     <div class="section" v-if="inputs?.activities">
       <h2>⚡ Section 4 — Activity Engine</h2>
       <table>
-        <thead><tr><th>Activity</th><th>Flow (gal/min)</th><th>Duration (min)</th><th>Events/Day</th><th>Gal/Unit</th><th>Grey Bool</th><th>Black Bool</th></tr></thead>
+        <thead><tr><th>Activity</th><th>Flow (gal/min)</th><th>Duration (min)</th><th>Events/Day</th><th>Gal/Unit</th><th>Grey</th><th>Black</th></tr></thead>
         <tbody>
           <tr v-for="a in inputs.activities" :key="a.id">
             <td>{{ a.name }}</td>
@@ -443,8 +442,18 @@
             <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" /></td>
             <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" /></td>
             <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" /></td>
-            <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.grey_pct" /></td>
-            <td><input type="number" min="0" max="1" step="0.01" v-model.number="a.black_pct" /></td>
+            <td>
+              <select v-model.number="a.grey_pct">
+                <option :value="1">Yes</option>
+                <option :value="0">No</option>
+              </select>
+            </td>
+            <td>
+              <select v-model.number="a.black_pct">
+                <option :value="1">Yes</option>
+                <option :value="0">No</option>
+              </select>
+            </td>
           </tr>
         </tbody>
       </table>
