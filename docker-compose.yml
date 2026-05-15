@@ -1,6 +1,7 @@
 services:
   api:
     build: .
+    restart: unless-stopped
     image: ghcr.io/${GHCR_IMAGE:-local/ev-camper-api}:latest
     ports:
       - "20023:8000"
