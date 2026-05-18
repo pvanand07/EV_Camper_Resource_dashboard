@@ -58,6 +58,9 @@
     .form-row input { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; padding: 0.5rem 0.65rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); }
     .form-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.2); }
     .form-row input[readonly] { opacity: 0.7; cursor: default; }
+    .form-row.input-error input { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.22); }
+    .field-hint.err { font-size: 0.78rem; color: var(--danger); margin-top: 0.15rem; line-height: 1.35; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* Drift */
     .drift-row { grid-column: 1/-1; background: #0d1b26; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
@@ -517,9 +520,9 @@
         <div class="form-row"><label>Fresh Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" /></div>
         <div class="form-row"><label>Grey Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" /></div>
         <div class="form-row"><label>Black Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" /></div>
-        <div class="form-row"><label>Current Fresh Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" /></div>
-        <div class="form-row"><label>Current Grey Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" /></div>
-        <div class="form-row"><label>Current Black Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" /></div>
+        <div class="form-row" :class="{ 'input-error': tankEnvErrors.fresh }"><label>Current Fresh Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" /><span class="field-hint err" v-if="tankEnvErrors.fresh">{{ tankEnvErrors.fresh }}</span></div>
+        <div class="form-row" :class="{ 'input-error': tankEnvErrors.grey }"><label>Current Grey Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" /><span class="field-hint err" v-if="tankEnvErrors.grey">{{ tankEnvErrors.grey }}</span></div>
+        <div class="form-row" :class="{ 'input-error': tankEnvErrors.black }"><label>Current Black Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" /><span class="field-hint err" v-if="tankEnvErrors.black">{{ tankEnvErrors.black }}</span></div>
         <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
         <div class="form-row"><label>Target Autonomy Days</label><input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" /></div>
         <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
@@ -615,7 +618,7 @@
     </div>
 
     <div class="save-bar">
-      <button class="btn btn-primary" @click="saveInputs" :disabled="saving">Save & Compute</button>
+      <button class="btn btn-primary" @click="saveInputs" :disabled="saving || hasTankLevelErrors">Save & Compute</button>
       <span class="msg" :class="{ err: saveError }" v-if="saveMsg">{{ saveMsg }}</span>
     </div>
   </div>
@@ -940,6 +943,40 @@ function coerceOptFloat(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+/** For inline tank validation: finite number or null if empty / invalid. */
+function readFiniteNum(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = typeof v === 'number' ? v : parseFloat(String(v));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Turn FastAPI / Pydantic 422 bodies into a short user-facing string. */
+function formatHttpErrorBody(status, bodyText) {
+  const raw = (bodyText || '').trim();
+  if (!raw) {
+    return status === 422
+      ? 'Invalid input. Please check your entries and try again.'
+      : 'Request failed (' + status + ').';
+  }
+  try {
+    const j = JSON.parse(raw);
+    if (Array.isArray(j.detail)) {
+      const parts = [];
+      for (const item of j.detail) {
+        if (typeof item === 'string') {
+          parts.push(item);
+        } else if (item && typeof item.msg === 'string') {
+          parts.push(String(item.msg).replace(/^Value error,\s*/i, ''));
+        }
+      }
+      if (parts.length) return parts.join(' ');
+    }
+    if (typeof j.detail === 'string') return j.detail;
+  } catch (_) { /* not JSON */ }
+  if (status === 422) return 'Invalid input. Please check your entries and try again.';
+  return raw.length > 280 ? raw.slice(0, 280) + '…' : raw;
+}
+
 createApp({
   data() {
     return {
@@ -1032,6 +1069,28 @@ createApp({
     realtimeHeatRange() {
       const ranges = this.realtime?.heat_ranges?.[this.realtimeStreamKey];
       return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
+    },
+
+    /** Per-stream: current level must not exceed capacity (RIQA-3). */
+    tankEnvErrors() {
+      const out = { fresh: null, grey: null, black: null };
+      const t = this.inputs?.tank_environment;
+      if (!t) return out;
+      const fc = readFiniteNum(t.fresh_capacity_gal);
+      const cf = readFiniteNum(t.current_fresh_gal);
+      const gc = readFiniteNum(t.grey_capacity_gal);
+      const cg = readFiniteNum(t.current_grey_gal);
+      const bc = readFiniteNum(t.black_capacity_gal);
+      const cb = readFiniteNum(t.current_black_gal);
+      const msg = 'Current level cannot exceed tank capacity.';
+      if (fc != null && cf != null && cf > fc) out.fresh = msg;
+      if (gc != null && cg != null && cg > gc) out.grey = msg;
+      if (bc != null && cb != null && cb > bc) out.black = msg;
+      return out;
+    },
+    hasTankLevelErrors() {
+      const e = this.tankEnvErrors;
+      return !!(e.fresh || e.grey || e.black);
     },
   },
 
@@ -1129,15 +1188,41 @@ createApp({
       }
     },
     async saveInputs() {
-      this.saving=true; this.saveMsg=''; this.saveError=false;
+      this.saving = true;
+      this.saveMsg = '';
+      this.saveError = false;
       try {
         this.normalizeInputsBeforeSave();
-        const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
-        if (!r.ok) throw new Error(await r.text());
-        this.saveMsg='Saved. Plan updated.';
+        if (this.hasTankLevelErrors) {
+          const bad = [];
+          if (this.tankEnvErrors.fresh) bad.push('Fresh');
+          if (this.tankEnvErrors.grey) bad.push('Grey');
+          if (this.tankEnvErrors.black) bad.push('Black');
+          this.saveMsg =
+            'Cannot save: for ' + bad.join(', ') + ', current level cannot exceed tank capacity.';
+          this.saveError = true;
+          return;
+        }
+        const r = await fetch(API + '/inputs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_types: this.inputs.user_types,
+            tank_environment: this.inputs.tank_environment,
+            behavior_multipliers: this.inputs.behavior_multipliers,
+            activities: this.inputs.activities,
+          }),
+        });
+        const text = await r.text();
+        if (!r.ok) throw new Error(formatHttpErrorBody(r.status, text));
+        this.saveMsg = 'Saved. Plan updated.';
         await this.refreshResults();
-      } catch(e) { this.saveMsg='Save failed: '+e.message; this.saveError=true; }
-      finally { this.saving=false; }
+      } catch (e) {
+        this.saveMsg = 'Save failed: ' + (e.message || String(e));
+        this.saveError = true;
+      } finally {
+        this.saving = false;
+      }
     },
     onSeedInput(e) {
       const v=e.target.value.trim();
