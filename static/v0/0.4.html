@@ -511,13 +511,14 @@
     <div class="section section-people" v-if="inputs">
       <h2>Section 1 — People <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
       <div class="form-grid">
-        <div class="form-row" v-for="u in inputs.user_types" :key="u.name+u.is_child">
+        <div class="form-row" :class="{ invalid: peopleCountErrors[userTypeKey(u)] }" v-for="u in inputs.user_types" :key="u.name+u.is_child">
           <label>{{ u.name }}<span v-if="u.is_child"> (children)</span></label>
           <input type="number" min="0" step="1" v-model.number="u.count" :readonly="u.name==='Adults Total'" />
+          <span class="field-error" v-if="peopleCountErrors[userTypeKey(u)]">{{ peopleCountErrors[userTypeKey(u)] }}</span>
         </div>
       </div>
       <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Adults Total = {{ adultsTotal }} (auto-sum)</p>
-      <p class="field-error section-error" v-if="hasOccupantErrors">{{ occupantErrorMessage }}</p>
+      <p class="field-error section-error" v-if="hasOccupantTotalError">{{ occupantErrorMessage }}</p>
     </div>
 
     <div class="section section-tank" v-if="inputs?.tank_environment">
@@ -972,6 +973,7 @@ const TANK_LEVEL_CHECKS = [
 ];
 
 const OCCUPANT_ERROR = 'At least one person is required to compute a water plan.';
+const OCCUPANT_COUNT_ERROR = 'People counts must be zero or positive integers.';
 
 function buildTankLevelErrors(t) {
   if (!t) return {};
@@ -1004,6 +1006,27 @@ function occupantErrorSummary(userTypes) {
   if (!userTypes?.length) return '';
   const total = userTypes.reduce((s, u) => s + (Number(u.count) || 0), 0);
   return total < 1 ? OCCUPANT_ERROR : '';
+}
+
+function userTypeKey(u) {
+  return `${u.name}::${u.is_child ? 1 : 0}`;
+}
+
+function occupantFieldErrors(userTypes) {
+  if (!userTypes?.length) return {};
+  const errors = {};
+  for (const u of userTypes) {
+    const value = Number(u.count);
+    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+      errors[userTypeKey(u)] = OCCUPANT_COUNT_ERROR;
+    }
+  }
+  return errors;
+}
+
+function occupantFieldErrorSummary(userTypes) {
+  const errors = occupantFieldErrors(userTypes);
+  return Object.keys(errors).length ? OCCUPANT_COUNT_ERROR : '';
 }
 
 function parseSaveError(text, status) {
@@ -1045,8 +1068,11 @@ createApp({
     totalOccupants() {
       return this.inputs?.user_types?.reduce((s,u)=>s+(u.count||0),0) ?? 0;
     },
+    peopleCountErrors() { return occupantFieldErrors(this.inputs?.user_types); },
+    hasPeopleCountErrors() { return Object.keys(this.peopleCountErrors).length > 0; },
     occupantErrorMessage() { return OCCUPANT_ERROR; },
-    hasOccupantErrors() { return this.totalOccupants < 1; },
+    hasOccupantTotalError() { return this.totalOccupants < 1; },
+    hasOccupantErrors() { return this.hasPeopleCountErrors || this.hasOccupantTotalError; },
     totalFresh() { return this.results?.activity_results?.reduce((s,r)=>s+(r.daily_fresh_gal||0),0) ?? 0; },
     totalGrey()  { return this.results?.activity_results?.reduce((s,r)=>s+(r.grey_added_gal||0),0)  ?? 0; },
     totalBlack() { return this.results?.activity_results?.reduce((s,r)=>s+(r.black_added_gal||0),0) ?? 0; },
@@ -1063,6 +1089,8 @@ createApp({
     hasTankLevelErrors() { return Object.keys(this.tankLevelErrors).length > 0; },
     hasInputErrors() { return this.hasTankLevelErrors || this.hasOccupantErrors; },
     saveBarMessage() {
+      const occupantFieldSummary = occupantFieldErrorSummary(this.inputs?.user_types);
+      if (occupantFieldSummary) return occupantFieldSummary;
       const occupantSummary = occupantErrorSummary(this.inputs?.user_types);
       if (occupantSummary) return occupantSummary;
       const summary = tankLevelErrorSummary(this.inputs?.tank_environment);
@@ -1197,6 +1225,7 @@ createApp({
       catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
     },
     userCount(ut) { return this.inputs?.user_types?.find(x=>x.name===ut)?.count??0; },
+    userTypeKey,
     normalizeInputsBeforeSave() {
       if (!this.inputs) return;
       for (const u of this.inputs.user_types) {
@@ -1235,6 +1264,7 @@ createApp({
       this.saving=true; this.saveMsg=''; this.saveError=false;
       try {
         this.normalizeInputsBeforeSave();
+        if (occupantFieldErrorSummary(this.inputs.user_types)) return;
         if (occupantErrorSummary(this.inputs.user_types)) return;
         if (tankLevelErrorSummary(this.inputs.tank_environment)) return;
         const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});

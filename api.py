@@ -122,6 +122,13 @@ class UserTypeUpdate(BaseModel):
             return 0
         return v
 
+    @field_validator("count")
+    @classmethod
+    def count_must_be_non_negative(cls, v):
+        if v < 0:
+            raise ValueError("People counts must be zero or positive integers.")
+        return v
+
 
 class TankEnvironmentUpdate(BaseModel):
     fresh_capacity_gal:   float = 100
@@ -195,6 +202,13 @@ class BehaviorMultiplierUpdate(BaseModel):
     sink_mult:   float
     toilet_mult: float
 
+    @field_validator("shower_mult", "sink_mult", "toilet_mult", mode="before")
+    @classmethod
+    def multiplier_must_be_non_negative(cls, v):
+        if v is not None and float(v) < 0:
+            raise ValueError("Behavior multipliers must be >= 0")
+        return v
+
 
 class ActivityUpdate(BaseModel):
     id:                        int
@@ -205,6 +219,21 @@ class ActivityUpdate(BaseModel):
     gal_per_unit:              float | None
     grey_pct:                  float
     black_pct:                 float
+
+    @field_validator(
+        "flow_gal_per_min",
+        "duration_min",
+        "events_per_day_per_person",
+        "gal_per_unit",
+        "grey_pct",
+        "black_pct",
+        mode="before",
+    )
+    @classmethod
+    def activity_values_must_be_non_negative(cls, v):
+        if v is not None and float(v) < 0:
+            raise ValueError("Activity values must be >= 0")
+        return v
 
 
 class InputsUpdate(BaseModel):
