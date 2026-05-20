@@ -58,6 +58,9 @@
     .form-row input { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; padding: 0.5rem 0.65rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); }
     .form-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.2); }
     .form-row input[readonly] { opacity: 0.7; cursor: default; }
+    .form-row.invalid input { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.15); }
+    .form-row.invalid input:focus { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.25); }
+    .field-error { font-size: 0.78rem; color: var(--danger); line-height: 1.3; }
 
     /* Drift */
     .drift-row { grid-column: 1/-1; background: #0d1b26; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
@@ -452,6 +455,9 @@
     /* Form inputs */
     body.light-mode .form-row input          { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
     body.light-mode .form-row input:focus    { border-color: #0891b2; box-shadow: 0 0 0 2px rgba(8,145,178,0.18); }
+    body.light-mode .form-row.invalid input  { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,0.12); }
+    body.light-mode .form-row.invalid input:focus { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,0.2); }
+    body.light-mode .field-error             { color: #dc2626; }
     body.light-mode td input, body.light-mode td select { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
     body.light-mode .seed-input              { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
     body.light-mode .seed-clear:hover        { border-color: var(--danger); color: var(--danger); }
@@ -517,11 +523,27 @@
         <div class="form-row"><label>Fresh Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" /></div>
         <div class="form-row"><label>Grey Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" /></div>
         <div class="form-row"><label>Black Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" /></div>
-        <div class="form-row"><label>Current Fresh Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" /></div>
-        <div class="form-row"><label>Current Grey Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" /></div>
-        <div class="form-row"><label>Current Black Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" /></div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.fresh }">
+          <label>Current Fresh Tank Level (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" />
+          <span class="field-error" v-if="tankLevelErrors.fresh">{{ tankLevelErrors.fresh }}</span>
+        </div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.grey }">
+          <label>Current Grey Tank Level (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" />
+          <span class="field-error" v-if="tankLevelErrors.grey">{{ tankLevelErrors.grey }}</span>
+        </div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.black }">
+          <label>Current Black Tank Level (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
+          <span class="field-error" v-if="tankLevelErrors.black">{{ tankLevelErrors.black }}</span>
+        </div>
         <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
-        <div class="form-row"><label>Target Autonomy Days</label><input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" /></div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.target_autonomy }">
+          <label>Target Autonomy Days</label>
+          <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
+          <span class="field-error" v-if="tankLevelErrors.target_autonomy">{{ tankLevelErrors.target_autonomy }}</span>
+        </div>
         <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
         <div class="drift-row">
           <div class="drift-top">
@@ -615,8 +637,8 @@
     </div>
 
     <div class="save-bar">
-      <button class="btn btn-primary" @click="saveInputs" :disabled="saving">Save & Compute</button>
-      <span class="msg" :class="{ err: saveError }" v-if="saveMsg">{{ saveMsg }}</span>
+      <button class="btn btn-primary" @click="saveInputs" :disabled="saving || hasTankLevelErrors">Save & Compute</button>
+      <span class="msg" :class="{ err: saveBarIsError }" v-if="saveBarMessage">{{ saveBarMessage }}</span>
     </div>
   </div>
 
@@ -940,6 +962,54 @@ function coerceOptFloat(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+const TANK_LEVEL_CHECKS = [
+  { key: 'fresh', field: 'Current Fresh Tank Level', current: 'current_fresh_gal', capacity: 'fresh_capacity_gal' },
+  { key: 'grey',  field: 'Current Grey Tank Level',  current: 'current_grey_gal',  capacity: 'grey_capacity_gal' },
+  { key: 'black', field: 'Current Black Tank Level', current: 'current_black_gal', capacity: 'black_capacity_gal' },
+];
+
+function buildTankLevelErrors(t) {
+  if (!t) return {};
+  const errors = {};
+  for (const { key, current, capacity } of TANK_LEVEL_CHECKS) {
+    const cap = coerceFloat(t[capacity], 0);
+    if (coerceFloat(t[current], 0) > cap) {
+      errors[key] = `Exceeds capacity (${cap} gal)`;
+    }
+  }
+  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
+    errors.target_autonomy = 'Target Autonomy Days must be greater than 0';
+  }
+  return errors;
+}
+
+function tankLevelErrorSummary(t) {
+  if (!t) return '';
+  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
+    return 'Target Autonomy Days must be greater than 0';
+  }
+  const fields = TANK_LEVEL_CHECKS
+    .filter(({ current, capacity }) => coerceFloat(t[current], 0) > coerceFloat(t[capacity], 0))
+    .map(({ field, capacity }) => `${field} (${coerceFloat(t[capacity], 0)} gal)`);
+  if (!fields.length) return '';
+  return `Please fix input for ${fields.join(', ')}.`;
+}
+
+function parseSaveError(text, status) {
+  try {
+    const body = JSON.parse(text);
+    if (Array.isArray(body.detail)) {
+      const msgs = body.detail
+        .map(d => (d.msg || '').replace(/^Value error,\s*/i, ''))
+        .filter(Boolean);
+      if (msgs.length) return msgs.join(' ');
+    }
+  } catch (_) {}
+  return status === 422
+    ? 'Invalid input. Please check your tank levels and try again.'
+    : `Server error (${status}).`;
+}
+
 createApp({
   data() {
     return {
@@ -973,6 +1043,16 @@ createApp({
     driftSd()  { return ((this.inputs?.tank_environment?.drift??0)/2).toFixed(2); },
     driftLo()  { return (1-(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
     driftHi()  { return (1+(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
+    tankLevelErrors() { return buildTankLevelErrors(this.inputs?.tank_environment); },
+    hasTankLevelErrors() { return Object.keys(this.tankLevelErrors).length > 0; },
+    saveBarMessage() {
+      const summary = tankLevelErrorSummary(this.inputs?.tank_environment);
+      if (summary) return summary;
+      return this.saveMsg;
+    },
+    saveBarIsError() {
+      return this.hasTankLevelErrors || this.saveError;
+    },
     heatDayNums() { return Array.from({length: this.results?.target_days||0},(_,i)=>i+1); },
     streamKey()   { return this.heatStream==='black'?'back':this.heatStream; },
 
@@ -1132,8 +1212,12 @@ createApp({
       this.saving=true; this.saveMsg=''; this.saveError=false;
       try {
         this.normalizeInputsBeforeSave();
+        if (tankLevelErrorSummary(this.inputs.tank_environment)) return;
         const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
-        if (!r.ok) throw new Error(await r.text());
+        if (!r.ok) {
+          const text = await r.text();
+          throw new Error(parseSaveError(text, r.status));
+        }
         this.saveMsg='Saved. Plan updated.';
         await this.refreshResults();
       } catch(e) { this.saveMsg='Save failed: '+e.message; this.saveError=true; }

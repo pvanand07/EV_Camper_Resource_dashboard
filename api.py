@@ -140,13 +140,20 @@ class TankEnvironmentUpdate(BaseModel):
     @field_validator(
         "fresh_capacity_gal", "grey_capacity_gal", "black_capacity_gal",
         "current_fresh_gal", "current_grey_gal", "current_black_gal",
-        "target_autonomy_days", "alert_threshold",
+        "alert_threshold",
         mode="before",
     )
     @classmethod
     def must_be_non_negative(cls, v):
         if v is not None and float(v) < 0:
             raise ValueError("value must be >= 0")
+        return v
+
+    @field_validator("target_autonomy_days", mode="before")
+    @classmethod
+    def target_autonomy_min_one(cls, v):
+        if v is not None and float(v) < 1:
+            raise ValueError("Target Autonomy Days must be at least 1")
         return v
 
     @field_validator("climate_multiplier", mode="before")
