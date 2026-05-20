@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Intelligence Engine</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f1419;
+      --bg-card: #1a2332;
+      --bg-input: #0d1117;
+      --accent: #22d3ee;
+      --accent-dim: #0891b2;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; line-height: 1.5; }
+    #app { max-width: 1040px; margin: 0 auto; padding: 1.5rem; }
+    header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); position: relative; }
+    h1 { font-size: 1.75rem; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
+    .app-title { display: inline-flex; align-items: center; gap: 0.6rem; }
+    .app-title-logo { width: auto; height: 1em; object-fit: contain; }
+    /* Default = dark mode: show dark logo, hide light logo */
+    .app-title-logo.logo-light { display: none; }
+    .app-title-logo.logo-dark  { display: inline-block; }
+    /* Light mode: swap */
+    body.light-mode .app-title-logo.logo-light { display: inline-block; }
+    body.light-mode .app-title-logo.logo-dark  { display: none; }
+    .version-selector { position: fixed; top: 24px; right: 24px; display: flex; align-items: center; gap: 0.5rem; z-index: 20; }
+    .version-selector label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .version-selector select { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; padding: 0.35rem 0.6rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; }
+    .version-selector select:focus { outline: none; border-color: var(--accent); }
+    .version-selector .vs-sep { width: 1px; height: 18px; background: var(--border); }
+    .theme-toggle { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; transition: all 0.2s; }
+    .theme-toggle:hover { border-color: var(--accent-dim); }
+    @media (max-width: 600px) { .version-selector { position: relative; top: auto; right: auto; justify-content: center; margin-top: 1rem; } }
+    .tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; }
+    .tab { padding: 0.6rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500; color: var(--text-muted); transition: all 0.2s; }
+    .tab:hover { color: var(--text); border-color: var(--accent-dim); }
+    .tab.active { background: var(--accent-dim); color: var(--bg-dark); border-color: var(--accent); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .section { background: var(--bg-card); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; border: 1px solid var(--border); }
+    .section h2 { font-size: 1rem; font-weight: 600; color: var(--accent); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .section h2 .badge { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .form-row { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-row label { font-size: 0.85rem; color: var(--text-muted); }
+    .form-row input { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; padding: 0.5rem 0.65rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); }
+    .form-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.2); }
+    .form-row input[readonly] { opacity: 0.7; cursor: default; }
+    .form-row.invalid input { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.15); }
+    .form-row.invalid input:focus { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.25); }
+    .field-error { font-size: 0.78rem; color: var(--danger); line-height: 1.3; }
+    .section-error { margin-top: 0.5rem; }
+
+    /* Drift */
+    .drift-row { grid-column: 1/-1; background: #0d1b26; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .drift-row .drift-top { display: flex; align-items: center; justify-content: space-between; }
+    .drift-row .drift-label { font-size: 0.9rem; font-weight: 600; color: var(--accent); }
+    .drift-row .drift-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .drift-value-badge { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--warning); background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; padding: 0.2rem 0.6rem; min-width: 52px; text-align: center; }
+    .drift-range-row { display: flex; align-items: center; gap: 0.75rem; }
+    .drift-range-row span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+    input[type="range"] { flex: 1; appearance: none; -webkit-appearance: none; height: 6px; border-radius: 3px; outline: none; cursor: pointer; background: linear-gradient(to right, var(--accent) 0%, var(--accent) calc(var(--drift-pct,0)*1%), var(--border) calc(var(--drift-pct,0)*1%), var(--border) 100%); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-dark); box-shadow: 0 0 4px rgba(34,211,238,0.5); }
+    .drift-band-label { font-size: 0.78rem; color: var(--text-muted); }
+    .drift-band-label span { color: var(--warning); font-family: 'JetBrains Mono', monospace; }
+    .seed-row { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid rgba(51,65,85,0.6); display: flex; flex-direction: column; gap: 0.4rem; }
+    .seed-label { font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .seed-hint { font-size: 0.74rem; color: #475569; }
+    .seed-input-wrap { display: flex; align-items: center; gap: 0.5rem; }
+    .seed-input { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; padding: 0.38rem 0.6rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); width: 120px; }
+    .seed-input:focus { outline: none; border-color: var(--accent); }
+    .seed-clear { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0.28rem 0.5rem; transition: all 0.15s; }
+    .seed-clear:hover { border-color: var(--danger); color: var(--danger); }
+    .seed-status { font-size: 0.78rem; color: var(--warning); font-family: 'JetBrains Mono', monospace; }
+    .seed-status.unlocked { color: var(--text-muted); }
+
+    /* Generic tables */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
+    td input, td select { width: 100%; max-width: 90px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.35rem 0.5rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
+    td input:focus, td select:focus { outline: none; border-color: var(--accent); }
+
+    /* Buttons */
+    .btn { font-family: 'Outfit', sans-serif; font-weight: 500; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: var(--accent); color: var(--bg-dark); }
+    .btn-primary:hover { background: #67e8f9; }
+    .btn-secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent-dim); }
+    .save-bar { position: sticky; bottom: 0; background: var(--bg-dark); padding: 1rem 0; margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; }
+    .save-bar .msg { font-size: 0.9rem; color: var(--success); }
+    .save-bar .msg.err { color: var(--danger); }
+
+    /* ── Results: trip planner tone (not scorecard) ───────── */
+    .section.results-plan-section {
+      border-radius: 14px;
+      border-color: rgba(51,65,85,0.85);
+      background: linear-gradient(180deg, rgba(26,35,50,0.98) 0%, rgba(22,28,38,0.99) 100%);
+    }
+    .section.results-plan-section > h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e0f2fe;
+      letter-spacing: -0.01em;
+    }
+    .section.results-plan-section > h2 .plan-h2-sub {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      letter-spacing: 0;
+    }
+    .water-resource-section.results-plan-section {
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+    .water-resource-section.results-plan-section > h2 { color: #e0f2fe; }
+    .water-card.water-card-plan {
+      background: rgba(13,17,23,0.55);
+      border: 1px solid rgba(51,65,85,0.65);
+      box-shadow: none;
+    }
+    .water-card.water-card-plan.limiting {
+      background: rgba(251,191,36,0.06);
+      border-color: rgba(251,191,36,0.35);
+    }
+    .water-card-label { letter-spacing: 0.04em; }
+    .water-status-note.plan-note {
+      margin-top: 1.1rem;
+      text-align: left;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(51,65,85,0.7);
+      background: rgba(13,17,23,0.45);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .water-status-note.plan-note .plan-note-label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .water-status-note.plan-note strong { color: #f8fafc; font-weight: 600; }
+    .water-status-note.plan-note-ok { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.06); }
+    .water-status-note.plan-note-ok .plan-note-label { color: rgba(52,211,153,0.85); }
+    .water-status-note.plan-note-gap { border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.06); }
+    .water-status-note.plan-note-gap .plan-note-label { color: rgba(248,113,113,0.9); }
+    .water-status-note.plan-note-gap strong { color: #fecaca; }
+
+    /* Results misc */
+    .results-table { font-family: 'JetBrains Mono', monospace; table-layout: fixed; }
+    .results-table th:not(:first-child),
+    .results-table td:not(:first-child) { text-align: right; }
+    .table-scroll { overflow-x: auto; }
+    .status-ok { color: var(--success); }
+    .status-tick { color: var(--text-muted); }
+    .status-warn { color: var(--warning); }
+    .status-bad { color: var(--danger); }
+
+    /* Water Resource Cards */
+    .water-resource-section { background: transparent; border: none; padding: 0; }
+    .water-resource-section h2 { margin-bottom: 1rem; }
+    .water-resource-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+    @media (max-width: 960px) { .water-resource-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .water-resource-cards { grid-template-columns: 1fr; } }
+    .water-card {
+      background: rgba(255,255,255,0.03);
+      padding: 1rem 1.25rem;
+      border-radius: 14px;
+      border: none;
+      min-height: 142px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .water-card.limiting { background: rgba(255,255,255,0.045); }
+    .water-card-header { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 0.2rem; margin-bottom: 0.75rem; }
+    /* Same header band height so Status + Fresh/Grey/Black titles line up in the row */
+    .water-resource-cards > .water-card > .water-card-header {
+      min-height: 2.55rem;
+    }
+    .water-card-title { font-size: 0.95rem; font-weight: 500; color: rgba(226,232,240,0.88); }
+    .water-card-label { font-size: 0.74rem; color: var(--warning); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .water-card-days { font-size: 2rem; font-weight: 600; color: #f8fafc; line-height: 1.05; letter-spacing: -0.03em; }
+    .water-card.limiting .water-card-days { color: #fbbf24; }
+    .water-card-days span { font-size: 0.9rem; font-weight: 400; color: var(--text-muted); margin-left: 0.25rem; }
+    .water-card-foot { margin-top: 0.85rem; font-size: 0.9rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
+    .water-card-foot.warn { color: var(--warning); }
+    .water-card-foot.ok { color: rgba(226,232,240,0.8); }
+    .water-status-note { margin-top: 0.9rem; font-size: 0.95rem; color: var(--text-muted); text-align: center; }
+    .water-status-note strong { color: #f8fafc; font-weight: 600; }
+    .water-status-note.supported strong { color: #f8fafc; }
+    .water-status-note.not-supported strong { color: var(--danger); }
+
+    /* Stability status card — same column layout as tank cards (header / value / foot) */
+    .water-support-status-card {
+      min-height: 142px;
+    }
+    .water-support-status-foot {
+      visibility: hidden;
+    }
+    .support-status-label {
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      padding: 0 0.5rem;
+      max-width: 11rem;
+    }
+    .water-support-status-card.tone-on-track .support-status-label { color: var(--success); }
+    .water-support-status-card.tone-needs-attention .support-status-label { color: var(--warning); }
+    .water-support-status-card.tone-not-supported .support-status-label { color: var(--danger); }
+    /* ── Recommended actions ─────────────────────────────── */
+    .action-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .action-row {
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.55rem 0.85rem; border-radius: 8px;
+      border-left: 3px solid transparent;
+      background: rgba(255,255,255,0.025);
+    }
+    .action-row.cat-gap_summary       { border-left-color: #f87171; }
+    .action-row.cat-service_stop      { border-left-color: #22d3ee; }
+    .action-row.cat-starting_state    { border-left-color: #60a5fa; }
+    .action-row.cat-feature_toggle    { border-left-color: #34d399; }
+    .action-row.cat-activity_reduction{ border-left-color: #fbbf24; }
+    .action-icon  { font-size: 1rem; flex-shrink: 0; line-height: 1; }
+    .action-body  { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+    .action-title { font-size: 0.875rem; font-weight: 600; color: #f1f5f9; }
+    .action-text  { font-size: 0.775rem; color: var(--text-muted); line-height: 1.4; }
+    .action-gain  {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; flex-shrink: 0;
+      background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25);
+      color: var(--warning); border-radius: 999px; padding: 0.15rem 0.45rem; white-space: nowrap;
+    }
+    .drift-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: var(--warning); margin-left: 0.5rem; }
+
+    /* ═══════════════════════════════════════════════════
+       HEATMAP
+    ═══════════════════════════════════════════════════ */
+    .stream-toggle { display: flex; gap: 0.3rem; margin-bottom: 1.1rem; }
+    .stream-btn { padding: 0.32rem 0.85rem; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: all 0.18s; font-family: 'Outfit', sans-serif; }
+    .stream-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+    .stream-btn.active-fresh { background: rgba(34,211,238,0.13); border-color: #22d3ee; color: #67e8f9; }
+    .stream-btn.active-grey  { background: rgba(148,163,184,0.13); border-color: #94a3b8; color: #cbd5e1; }
+    .stream-btn.active-black { background: rgba(248,113,113,0.12); border-color: #f87171; color: #fca5a5; }
+
+    .heatmap-wrap { overflow-x: auto; padding-bottom: 0.25rem; }
+    .heatmap { border-collapse: separate; border-spacing: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+
+    /* Sticky column header */
+    .heatmap th { padding: 0.4rem 0.5rem; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-align: center; white-space: nowrap; background: var(--bg-card); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 2; }
+    .heatmap th.th-act { text-align: left; min-width: 155px; position: sticky; left: 0; z-index: 3; }
+
+    /* Sticky label column */
+    .heatmap td.act-label { position: sticky; left: 0; background: var(--bg-card); z-index: 1; padding: 0 0.65rem; white-space: nowrap; font-size: 0.82rem; color: var(--text); min-width: 155px; border-radius: 4px 0 0 4px; }
+    .heatmap td.act-label .act-name { display: block; padding: 0.3rem 0; }
+
+    /* Group header */
+    .heatmap tr.grp-hdr td { background: #101d2b; padding: 0.28rem 0.65rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; border-top: 2px solid #1e3347; }
+    .heatmap tr.grp-hdr td.act-label { background: #101d2b; }
+
+    /* Subtotal rows */
+    .heatmap tr.grp-sub td { background: rgba(10,15,20,0.55); }
+    .heatmap tr.grp-sub td.act-label { background: rgba(10,15,20,0.55); color: var(--text-muted); font-style: italic; }
+    .heatmap tr.grand td { background: #0d1117; }
+    .heatmap tr.grand td.act-label { background: #0d1117; color: var(--text); font-weight: 700; }
+
+    /* Heat cells */
+    td.heat-td { padding: 1px; text-align: center; vertical-align: middle; }
+    .heat-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 56px; height: 44px; border-radius: 5px; cursor: default; transition: filter 0.14s, transform 0.14s; }
+    .heat-cell:hover { filter: brightness(1.25); transform: scale(1.06); z-index: 10; position: relative; }
+    .heat-cell .cv  { font-size: 0.76rem; font-weight: 700; line-height: 1; }
+    .heat-cell .cf  { font-size: 0.59rem; opacity: 0.8; line-height: 1; margin-top: 2px; }
+    .sub-cell { display: flex; align-items: center; justify-content: center; min-width: 56px; height: 32px; border-radius: 4px; font-size: 0.73rem; font-weight: 600; background: rgba(30,45,60,0.7); color: var(--text-muted); }
+    .grand-cell { background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.18); color: var(--accent); font-weight: 700; }
+
+    .heatmap-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+    .heatmap-unit-note { font-size: 0.75rem; color: var(--text-muted); }
+    .drift-note { font-size: 0.74rem; color: #475569; }
+
+    /* Greywater recycling toggle row */
+    .greywater-row { grid-column: 1/-1; background: #0a1f14; border: 1px solid rgba(52,211,153,0.25); border-radius: 10px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .greywater-row.active { border-color: rgba(52,211,153,0.55); background: rgba(52,211,153,0.06); }
+    .greywater-info { flex: 1; }
+    .greywater-label { font-size: 0.9rem; font-weight: 600; color: #34d399; display: flex; align-items: center; gap: 0.4rem; }
+    .greywater-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+    .greywater-savings { font-size: 0.78rem; color: rgba(52,211,153,0.7); margin-top: 0.3rem; }
+
+    /* Toggle switch */
+    .toggle { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: 26px; transition: 0.2s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: var(--text-muted); border-radius: 50%; transition: 0.2s; }
+    .toggle input:checked + .toggle-slider { background: rgba(52,211,153,0.35); border: 1px solid #34d399; }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(22px); background: #34d399; }
+
+    /* Greywater chip for results/realtime headers */
+    .grey-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: #34d399; margin-left: 0.5rem; }
+
+    /* Realtime tab */
+    .day-switcher { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+    .day-btn { padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: 'Outfit', sans-serif; }
+    .day-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+    .day-btn.active { background: var(--accent-dim); color: var(--bg-dark); border-color: var(--accent); }
+    .day-btn.has-alert { border-color: var(--warning); color: var(--warning); }
+    .day-btn.has-alert.active { background: rgba(251,191,36,0.2); color: var(--warning); }
+    .realtime-alert { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.4); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--danger); }
+    .realtime-alert-icon { font-size: 1.1rem; }
+    .realtime-h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1rem 0 0.5rem; }
+    .realtime-h3:first-of-type { margin-top: 0; }
+    .realtime-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 0.5rem; }
+    .realtime-stat { background: var(--bg-input); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border); }
+    .realtime-stat .label { font-size: 0.8rem; color: var(--text-muted); display: block; }
+    .realtime-stat .value { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; margin-top: 0.25rem; }
+    .realtime-stat.baseline .value { font-size: 0.85rem; font-weight: 500; }
+
+    /* ══════════════════════════════════════════════════════
+       LIGHT MODE
+    ══════════════════════════════════════════════════════ */
+    body.light-mode {
+      --bg-dark:    #f8fafc;
+      --bg-card:    #ffffff;
+      --bg-input:   #f1f5f9;
+      --accent:     #0891b2;
+      --accent-dim: #0e7490;
+      --text:       #0f172a;
+      --text-muted: #64748b;
+      --border:     #e2e8f0;
+      --success:    #059669;
+      --warning:    #d97706;
+      --danger:     #dc2626;
+    }
+
+    /* Card elevation */
+    body.light-mode .section {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    /* Active tab / day-btn */
+    body.light-mode .tab.active     { color: #ffffff; }
+    body.light-mode .day-btn.active { color: #ffffff; }
+
+    /* Buttons */
+    body.light-mode .btn-primary          { color: #ffffff; }
+    body.light-mode .btn-secondary        { background: #f1f5f9; border-color: #e2e8f0; color: #0f172a; }
+
+    /* Drift row */
+    body.light-mode .drift-row            { background: #f0f9ff; border-color: rgba(8,145,178,0.22); }
+    body.light-mode .drift-value-badge    { background: rgba(217,119,6,0.10); border-color: rgba(217,119,6,0.28); color: #92400e; }
+
+    /* Greywater row */
+    body.light-mode .greywater-row        { background: #f0fdf4; border-color: rgba(5,150,105,0.22); }
+    body.light-mode .greywater-row.active { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.36); }
+    body.light-mode .greywater-label      { color: #059669; }
+    body.light-mode .greywater-savings    { color: rgba(5,150,105,0.85); }
+
+    /* Results plan section */
+    body.light-mode .section.results-plan-section         { background: #ffffff; border-color: #e2e8f0; }
+    body.light-mode .section.results-plan-section > h2    { color: #0f172a; }
+    body.light-mode .water-resource-section.results-plan-section > h2 { color: #0f172a; }
+
+    /* Water cards — neutral white, status-driven tinting only */
+    body.light-mode .water-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
+    }
+    body.light-mode .water-card.water-card-plan           { background: #ffffff; border-color: #e2e8f0; }
+    body.light-mode .water-card-title                     { color: #334155; font-weight: 600; }
+    body.light-mode .water-card-days                      { color: #0f172a; }
+    body.light-mode .water-card-foot.ok                   { color: #64748b; }
+    body.light-mode .water-card-label                     { color: #d97706; }
+
+    /* Limiting state */
+    body.light-mode .water-card.limiting,
+    body.light-mode .water-card.water-card-plan.limiting  { background: rgba(217,119,6,0.05); border-color: rgba(217,119,6,0.28); }
+    body.light-mode .water-card.limiting .water-card-days { color: #d97706; }
+
+    /* Outlook card — semantic status tones only */
+    body.light-mode .water-support-status-card.tone-on-track      { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.24); }
+    body.light-mode .water-support-status-card.tone-needs-attention{ background: rgba(217,119,6,0.06); border-color: rgba(217,119,6,0.24); }
+    body.light-mode .water-support-status-card.tone-not-supported  { background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.24); }
+
+    body.light-mode .water-support-status-card.tone-on-track       .support-status-label { color: #059669; }
+    body.light-mode .water-support-status-card.tone-needs-attention .support-status-label { color: #d97706; }
+    body.light-mode .water-support-status-card.tone-not-supported   .support-status-label { color: #dc2626; }
+
+    /* Plan notes */
+    body.light-mode .water-status-note strong                        { color: #0f172a; }
+    body.light-mode .water-status-note.plan-note                     { background: #f8fafc; border-color: #e2e8f0; }
+    body.light-mode .water-status-note.plan-note strong              { color: #0f172a; }
+    body.light-mode .water-status-note.plan-note-ok                  { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.28); }
+    body.light-mode .water-status-note.plan-note-ok .plan-note-label { color: rgba(5,150,105,0.9); }
+    body.light-mode .water-status-note.plan-note-gap                 { background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.28); }
+    body.light-mode .water-status-note.plan-note-gap .plan-note-label{ color: rgba(220,38,38,0.9); }
+    body.light-mode .water-status-note.plan-note-gap strong          { color: #b91c1c; }
+
+    /* Action rows */
+    body.light-mode .action-row   { background: rgba(0,0,0,0.025); }
+    body.light-mode .action-title { color: #0f172a; }
+    body.light-mode .action-gain  { background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.28); color: #d97706; }
+
+    /* Chips */
+    body.light-mode .grey-chip  { color: #059669; background: rgba(5,150,105,0.08); border-color: rgba(5,150,105,0.25); }
+    body.light-mode .drift-chip { color: #d97706; background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.22); }
+
+    /* Stream toggle buttons */
+    body.light-mode .stream-btn              { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+    body.light-mode .stream-btn.active-fresh { background: rgba(8,145,178,0.12); border-color: #0891b2; color: #0e7490; }
+    body.light-mode .stream-btn.active-grey  { background: rgba(100,116,139,0.12); border-color: #64748b; color: #475569; }
+    body.light-mode .stream-btn.active-black { background: rgba(220,38,38,0.10); border-color: #dc2626; color: #b91c1c; }
+
+    /* Heatmap group headers & special rows */
+    body.light-mode .heatmap tr.grp-hdr td               { background: #f1f5f9; color: #475569; border-top-color: #e2e8f0; }
+    body.light-mode .heatmap tr.grp-hdr td.act-label     { background: #f1f5f9; }
+    body.light-mode .heatmap tr.grp-sub td               { background: rgba(200,214,229,0.50); }
+    body.light-mode .heatmap tr.grp-sub td.act-label     { background: rgba(200,214,229,0.50); color: #475569; }
+    body.light-mode .heatmap tr.grand td                 { background: #f8fafc; }
+    body.light-mode .heatmap tr.grand td.act-label       { background: #f8fafc; color: #0f172a; font-weight: 700; }
+    body.light-mode .sub-cell   { background: rgba(200,214,229,0.70); color: #475569; }
+    body.light-mode .grand-cell { background: rgba(8,145,178,0.10); border-color: rgba(8,145,178,0.28); color: #0891b2; }
+
+    /* Range slider thumb border */
+    body.light-mode input[type="range"]::-webkit-slider-thumb { border-color: var(--bg-dark); }
+
+    /* Realtime alert */
+    body.light-mode .realtime-alert { background: rgba(220,38,38,0.07); border-color: rgba(220,38,38,0.35); }
+    body.light-mode .realtime-stat  { background: #f8fafc; border-color: #e2e8f0; }
+    body.light-mode .realtime-h3    { color: #64748b; }
+
+    /* Form inputs */
+    body.light-mode .form-row input          { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
+    body.light-mode .form-row input:focus    { border-color: #0891b2; box-shadow: 0 0 0 2px rgba(8,145,178,0.18); }
+    body.light-mode .form-row.invalid input  { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,0.12); }
+    body.light-mode .form-row.invalid input:focus { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,0.2); }
+    body.light-mode .field-error             { color: #dc2626; }
+    body.light-mode td input, body.light-mode td select { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
+    body.light-mode .seed-input              { background: #f8fafc; border-color: #e2e8f0; color: #0f172a; }
+    body.light-mode .seed-clear:hover        { border-color: var(--danger); color: var(--danger); }
+
+    /* Tables */
+    body.light-mode th { color: #64748b; }
+    body.light-mode td { border-bottom-color: #f1f5f9; }
+
+    /* Inline-styled greywater recycled spans */
+    body.light-mode [style*="color:#34d399"] { color: #059669 !important; }
+
+    /* Heat cell text: stronger weight in light mode so values read clearly */
+    body.light-mode .heat-cell .cv { font-weight: 800; }
+    body.light-mode .heat-cell .cf { font-weight: 600; opacity: 1; }
+
+    /* Dark mode: ensure grey and black stream text is crisp */
+    .heat-cell .cv { font-weight: 700; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="version-selector">
+      <button class="theme-toggle" @click="toggleLightMode" :title="lightMode ? 'Switch to dark mode' : 'Switch to light mode'" :aria-label="lightMode ? 'Switch to dark mode' : 'Switch to light mode'">{{ lightMode ? '🌙' : '☀️' }}</button>
+      <span class="vs-sep"></span>
+      <label for="version-select">Version</label>
+      <select id="version-select" @change="onVersionChange($event)">
+        <option value="0.4" :selected="currentVersion === '0.4'">v0.4 (latest)</option>
+        <option value="0.3" :selected="currentVersion === '0.3'">v0.3</option>
+        <option value="0.2" :selected="currentVersion === '0.2'">v0.2</option>
+        <option value="0.1" :selected="currentVersion === '0.1'">v0.1</option>
+      </select>
+    </div>
+    <h1 class="app-title">
+      <img src="/static/ACfuturelogo.png" alt="AC Future logo" class="app-title-logo logo-light" />
+      <img src="/static/ACfuturelogo1.png" alt="AC Future logo" class="app-title-logo logo-dark" />
+      <span>Water Intelligence Engine</span>
+    </h1>
+  </header>
+
+  <div class="tabs">
+    <button class="tab" :class="{ active: tab==='input' }"   @click="tab='input'">Input</button>
+    <button class="tab" :class="{ active: tab==='results' }" @click="tab='results'; refreshResults()">Plan</button>
+    <button class="tab" :class="{ active: tab==='realtime' }" @click="tab='realtime'; loadRealtime()">Realtime</button>
+  </div>
+
+  <!-- ═══ INPUT TAB ════════════════════════════════════════ -->
+  <div class="panel" :class="{ active: tab==='input' }">
+
+    <div class="section section-people" v-if="inputs">
+      <h2>Section 1 — People <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
+      <div class="form-grid">
+        <div class="form-row" v-for="u in inputs.user_types" :key="u.name+u.is_child">
+          <label>{{ u.name }}<span v-if="u.is_child"> (children)</span></label>
+          <input type="number" min="0" step="1" v-model.number="u.count" :readonly="u.name==='Adults Total'" />
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Adults Total = {{ adultsTotal }} (auto-sum)</p>
+      <p class="field-error section-error" v-if="hasOccupantErrors">{{ occupantErrorMessage }}</p>
+    </div>
+
+    <div class="section section-tank" v-if="inputs?.tank_environment">
+      <h2>Section 2 — Tank & Environment</h2>
+      <div class="form-grid">
+        <div class="form-row"><label>Fresh Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" /></div>
+        <div class="form-row"><label>Grey Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" /></div>
+        <div class="form-row"><label>Black Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" /></div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.fresh }">
+          <label>Current Fresh Tank Level (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" />
+          <span class="field-error" v-if="tankLevelErrors.fresh">{{ tankLevelErrors.fresh }}</span>
+        </div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.grey }">
+          <label>Current Grey Tank Level (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" />
+          <span class="field-error" v-if="tankLevelErrors.grey">{{ tankLevelErrors.grey }}</span>
+        </div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.black }">
+          <label>Current Black Tank Level (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
+          <span class="field-error" v-if="tankLevelErrors.black">{{ tankLevelErrors.black }}</span>
+        </div>
+        <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.target_autonomy }">
+          <label>Target Autonomy Days</label>
+          <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
+          <span class="field-error" v-if="tankLevelErrors.target_autonomy">{{ tankLevelErrors.target_autonomy }}</span>
+        </div>
+        <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
+        <div class="drift-row">
+          <div class="drift-top">
+            <div>
+              <div class="drift-label">Behavioral Drift</div>
+              <div class="drift-desc">Models day-to-day unpredictability via N(1.0, σ=drift/2) clipped to [1−drift, 1+drift].</div>
+            </div>
+            <div class="drift-value-badge">{{ driftPct }}</div>
+          </div>
+          <div class="drift-range-row">
+            <span>0 — none</span>
+            <input type="range" min="0" max="1" step="0.01" v-model.number="inputs.tank_environment.drift" :style="{'--drift-pct': inputs.tank_environment.drift*100}" />
+            <span>1 — max</span>
+          </div>
+          <div class="drift-band-label" v-if="inputs.tank_environment.drift > 0">
+            Draw from <span>N(1.0, {{ driftSd }})</span> clipped to <span>[{{ driftLo }}, {{ driftHi }}]</span>
+          </div>
+          <div class="drift-band-label" v-else style="color:#475569;">Drift = 0 — all days use exact baseline (deterministic)</div>
+          <div class="seed-row" v-if="inputs.tank_environment.drift > 0">
+            <label class="seed-label">Random Seed <span class="seed-hint">integer = locked &amp; reproducible &nbsp;|&nbsp; blank = fresh random each run</span></label>
+            <div class="seed-input-wrap">
+              <input type="number" step="1" min="0" class="seed-input" :value="inputs.tank_environment.drift_seed ?? ''" @input="onSeedInput($event)" placeholder="e.g. 42" />
+              <button class="seed-clear" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined" @click="inputs.tank_environment.drift_seed = null">✕</button>
+              <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">locked</span>
+              <span class="seed-status unlocked" v-else>random</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Greywater Recycling toggle -->
+        <div class="greywater-row" :class="{ active: greywaterRecycle }">
+          <div class="greywater-info">
+            <div class="greywater-label">♻️ Greywater Recycling</div>
+            <div class="greywater-desc">
+              Accumulated grey water from the previous day (shower, sinks) is redirected to toilet flushing, reducing fresh water consumption.
+            </div>
+            <div class="greywater-savings" v-if="greywaterRecycle">
+              Open <strong>Plan</strong> → Tank capacity &amp; daily change to see fresh and grey runway.
+            </div>
+          </div>
+          <label class="toggle" title="Toggle greywater recycling">
+            <input type="checkbox" v-model="greywaterRecycle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="section section-behavior" v-if="inputs?.behavior_multipliers">
+      <h2>Section 3 — Behavior Multipliers</h2>
+      <table>
+        <thead><tr><th>User Type</th><th>Count</th><th>Shower Mult</th><th>Sink Mult</th><th>Toilet Mult</th></tr></thead>
+        <tbody>
+          <tr v-for="b in inputs.behavior_multipliers" :key="b.user_type">
+            <td>{{ b.user_type }}</td><td>{{ userCount(b.user_type) }}</td>
+            <td><input type="number" min="0" step="0.1" v-model.number="b.shower_mult" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="b.sink_mult" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="b.toilet_mult" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section section-activity" v-if="inputs?.activities">
+      <h2>Section 4 — Activity Engine</h2>
+      <table>
+        <thead><tr><th>Activity</th><th>Flow (gal/min)</th><th>Duration (min)</th><th>Events/Day</th><th>Gal/Unit</th><th>Grey</th><th>Black</th></tr></thead>
+        <tbody>
+          <tr v-for="a in inputs.activities" :key="a.id">
+            <td>{{ a.name }}</td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" /></td>
+            <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" /></td>
+            <td>
+              <select v-model.number="a.grey_pct">
+                <option :value="1">Yes</option>
+                <option :value="0">No</option>
+              </select>
+            </td>
+            <td>
+              <select v-model.number="a.black_pct">
+                <option :value="1">Yes</option>
+                <option :value="0">No</option>
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn btn-primary" @click="saveInputs" :disabled="saving || hasInputErrors">Save & Compute</button>
+      <span class="msg" :class="{ err: saveBarIsError }" v-if="saveBarMessage">{{ saveBarMessage }}</span>
+    </div>
+  </div>
+
+  <!-- ═══ PLAN (results) TAB ═════════════════════════════════ -->
+  <div class="panel" :class="{ active: tab==='results' }">
+
+    <!-- Water outlook -->
+    <div class="section water-resource-section results-plan-section" v-if="results?.stability_score">
+      <h2>Tank Runway</h2>
+      <div class="water-resource-cards">
+        <div
+          class="water-card water-card-plan water-support-status-card"
+          :class="supportStatusToneClass"
+        >
+          <div class="water-card-header">
+            <span class="water-card-title">Outlook</span>
+          </div>
+          <div>
+            <div class="support-status-label">{{ planOutlookHeadline }}</div>
+            <div class="water-card-foot water-support-status-foot">
+              <span>✓</span><span>Ok</span>
+            </div>
+          </div>
+        </div>
+        <div class="water-card water-card-plan tank-fresh" :class="{ limiting: results.stability_score.limiting_tank === 'Fresh' }">
+          <div class="water-card-header">
+            <span class="water-card-title">Fresh</span>
+            <span v-if="results.stability_score.limiting_tank === 'Fresh'" class="water-card-label">Main constraint</span>
+          </div>
+          <div>
+            <div class="water-card-days">{{ results.stability_score.fresh_days?.toFixed(2) }}<span>days</span></div>
+            <div class="water-card-foot" :class="waterCardTone('Fresh')">
+              <span>{{ waterCardPlanIcon('Fresh') }}</span>
+              <span>{{ waterCardPlanFoot('Fresh') }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="water-card water-card-plan tank-grey" :class="{ limiting: results.stability_score.limiting_tank === 'Grey' }">
+          <div class="water-card-header">
+            <span class="water-card-title">Grey</span>
+            <span v-if="results.stability_score.limiting_tank === 'Grey'" class="water-card-label">Main constraint</span>
+          </div>
+          <div>
+            <div class="water-card-days">{{ results.stability_score.grey_days?.toFixed(2) }}<span>days</span></div>
+            <div class="water-card-foot" :class="waterCardTone('Grey')">
+              <span>{{ waterCardPlanIcon('Grey') }}</span>
+              <span>{{ waterCardPlanFoot('Grey') }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="water-card water-card-plan tank-black" :class="{ limiting: results.stability_score.limiting_tank === 'Black' }">
+          <div class="water-card-header">
+            <span class="water-card-title">Black</span>
+            <span v-if="results.stability_score.limiting_tank === 'Black'" class="water-card-label">Main constraint</span>
+          </div>
+          <div>
+            <div class="water-card-days">{{ results.stability_score.black_days?.toFixed(2) }}<span>days</span></div>
+            <div class="water-card-foot" :class="waterCardTone('Black')">
+              <span>{{ waterCardPlanIcon('Black') }}</span>
+              <span>{{ waterCardPlanFoot('Black') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-if="results?.stay_supported === true" class="water-status-note plan-note plan-note-ok">
+        <span class="plan-note-label">Timeline check</span>
+        At this usage, your <strong>{{ results.stability_score.target_days }}-day</strong> itinerary fits the tanks — the tightest stream has about <strong>{{ results.stability_score.limiting_days?.toFixed(2) }}</strong> days of runway.
+      </div>
+      <div v-else-if="results?.stay_supported === false" class="water-status-note plan-note plan-note-gap">
+        <span class="plan-note-label">Timeline check</span>
+        <strong>{{ results.stability_score.limiting_days?.toFixed(2) }} d</strong> of headroom vs. a <strong>{{ results.stability_score.target_days }}-day</strong> target — {{ results.stability_score.limiting_tank }} tank is the constraint.
+      </div>
+      <div
+        v-if="results?.stay_supported === false && results?.recommended_actions?.length"
+        class="action-list"
+      >
+        <div
+          v-for="action in results.recommended_actions"
+          :key="action.priority"
+          class="action-row"
+          :class="'cat-' + action.category"
+        >
+          <span class="action-icon">{{ actionIcon(action.category) }}</span>
+          <div class="action-body">
+            <span class="action-title">{{ formatRecommendedActionText(action.title) }}</span>
+            <span class="action-text">{{ formatRecommendedActionText(action.summary) }}</span>
+          </div>
+          <span class="action-gain">+{{ action.estimated_days_gain?.toFixed(2) }} d</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tank projections -->
+    <div class="section results-plan-section" v-if="results?.tank_projections?.length">
+      <h2>
+        Tank Projections
+        <span class="plan-h2-sub">Numbers behind the outlook — deterministic baseline.</span>
+        <span class="grey-chip" v-if="results.greywater_recycle">♻ recycling on</span>
+      </h2>
+      <table class="results-table">
+        <thead><tr><th>Tank</th><th>Capacity</th><th>Current</th><th>Daily Δ</th><th>Runway (days)</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr v-for="t in results.tank_projections" :key="t.tank">
+            <td>{{ t.tank }}</td>
+            <td>{{ t.capacity_gal?.toFixed(1) }}</td>
+            <td>{{ t.current_gal?.toFixed(1) }}</td>
+            <td>{{ t.daily_delta_gal > 0 ? '+' : '' }}{{ t.daily_delta_gal?.toFixed(2) }}</td>
+            <td>{{ t.days_remaining >= 9999 ? '∞' : t.days_remaining?.toFixed(2) }}</td>
+            <td :class="statusClass(t.status)">{{ t.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Activity baseline -->
+    <div class="section results-plan-section" v-if="results?.activity_results?.length">
+      <h2>
+        Expected Daily Use
+        <span class="plan-h2-sub">Baseline gallons per day before drift — your demand profile.</span>
+      </h2>
+      <table class="results-table">
+        <thead><tr><th>Activity</th><th>Fresh/day</th><th>Grey/day</th><th>Black/day</th><th>Attrib %</th></tr></thead>
+        <tbody>
+          <tr v-for="r in results.activity_results" :key="r.activity_name">
+            <td>{{ r.activity_name }}</td>
+            <td>{{ r.daily_fresh_gal?.toFixed(2) }}</td>
+            <td>{{ r.grey_added_gal?.toFixed(2) }}</td>
+            <td>{{ r.black_added_gal?.toFixed(2) }}</td>
+            <td>{{ r.fresh_attrib_pct?.toFixed(1) }}%</td>
+          </tr>
+          <tr style="font-weight:600;border-top:2px solid var(--border);">
+            <td>TOTAL</td>
+            <td>{{ totalFresh?.toFixed(2) }}</td>
+            <td>{{ totalGrey?.toFixed(2) }}</td>
+            <td>{{ totalBlack?.toFixed(2) }}</td>
+            <td>100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── HEATMAP ──────────────────────────────────────────── -->
+    <div class="section results-plan-section" v-if="results?.daily_usage_by_day?.length">
+      <h2>
+        Demand by Day
+        <span class="plan-h2-sub">See how each activity stacks across your stay (gal/day per stream).</span>
+        <span class="drift-chip" v-if="results.drift > 0">
+          drift {{ results.drift?.toFixed(2) }}
+          <template v-if="results.drift_seed !== null && results.drift_seed !== undefined">&nbsp;· seed {{ results.drift_seed }}</template>
+          <template v-else>&nbsp;· random</template>
+        </span>
+      </h2>
+
+      <div class="stream-toggle">
+        <button class="stream-btn" :class="{'active-fresh': heatStream==='fresh'}" @click="heatStream='fresh'">Fresh</button>
+        <button class="stream-btn" :class="{'active-grey':  heatStream==='grey'}"  @click="heatStream='grey'">Grey</button>
+        <button class="stream-btn" :class="{'active-black': heatStream==='black'}" @click="heatStream='black'">Black</button>
+      </div>
+
+      <div class="heatmap-wrap">
+        <table class="heatmap">
+          <thead>
+            <tr>
+              <th class="th-act">Activity</th>
+              <th v-for="d in heatDayNums" :key="d">Day {{ d }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="group in heatGroups" :key="group.name">
+              <!-- Group header -->
+              <tr class="grp-hdr">
+                <td class="act-label" :colspan="heatDayNums.length + 1">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
+              </tr>
+              <!-- Activity rows -->
+              <tr v-for="row in group.rows" :key="row.activity">
+                <td class="act-label"><span class="act-name">{{ row.activity }}</span></td>
+                <td class="heat-td" v-for="d in heatDayNums" :key="d">
+                  <div class="heat-cell" :style="cellStyle(row, d)" :title="cellTitle(row, d)">
+                    <span class="cv">{{ cellVal(row, d) }}</span>
+                    <span class="cf" v-if="results.drift > 0 && row[`factor_${d}`] !== undefined">×{{ row[`factor_${d}`]?.toFixed(2) }}</span>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="heatmap-footer">
+        <span class="heatmap-unit-note">Values in gal/day (normalised per stream)</span>
+        <div class="drift-note" v-if="results.drift > 0">
+          ×factor below value = drift draw &nbsp;·&nbsp; amber border = above baseline, cyan = below
+        </div>
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn btn-secondary" @click="refreshResults">Refresh plan</button>
+    </div>
+  </div>
+
+  <!-- ═══ REALTIME TAB ════════════════════════════════════════ -->
+  <div class="panel" :class="{ active: tab==='realtime' }">
+    <div class="section" v-if="realtime">
+      <h2>
+        Realtime — Day View
+        <span class="grey-chip" v-if="realtime.greywater_recycle">♻ recycling on</span>
+      </h2>
+      <div class="day-switcher">
+        <button
+          v-for="d in realtimeDays"
+          :key="d"
+          class="day-btn"
+          :class="{ active: realtimeDay === d, 'has-alert': dayAlert(d) }"
+          @click="realtimeDay = d"
+        >Day {{ d }}</button>
+      </div>
+
+      <div
+        v-for="item in (currentDayData && currentDayData.alerts) || []"
+        :key="item.stream"
+        class="realtime-alert"
+      >
+        <span class="realtime-alert-icon">⚠️</span>
+        <span>{{ item.message }}</span>
+      </div>
+
+      <template v-if="currentDayData">
+        <div :key="'day-' + realtimeDay">
+        <h3 class="realtime-h3">Tank levels (end of day, capped at capacity)</h3>
+        <div class="realtime-stats" v-if="currentDayData?.tank_levels && realtime?.tank_capacities">
+          <div class="realtime-stat"><span class="label">Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
+          <div class="realtime-stat" v-if="realtime.greywater_recycle && realtimeDay > 1 && currentDayData.grey_recycled_gal > 0" style="border-color:rgba(52,211,153,0.35);">
+            <span class="label" style="color:#34d399;">♻ Recycled</span>
+            <span class="value" style="color:#34d399;">{{ currentDayData.grey_recycled_gal?.toFixed(2) }} gal → toilet</span>
+          </div>
+        </div>
+
+        <h3 class="realtime-h3">Total usage today (Day {{ realtimeDay }})</h3>
+        <div class="realtime-stats">
+          <div class="realtime-stat"><span class="label">Fresh</span><span class="value">{{ currentDayData.stats.fresh_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Grey</span><span class="value">{{ currentDayData.stats.grey_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat"><span class="label">Black</span><span class="value">{{ currentDayData.stats.black_gal?.toFixed(2) }} gal</span></div>
+          <div class="realtime-stat baseline"><span class="label">Baseline (daily)</span><span class="value">{{ currentDayData.baseline?.fresh_gal?.toFixed(2) }} / {{ currentDayData.baseline?.grey_gal?.toFixed(2) }} / {{ currentDayData.baseline?.black_gal?.toFixed(2) }} gal</span></div>
+        </div>
+
+        <h3 class="realtime-h3">Daily activities (Day {{ realtimeDay }})</h3>
+        <div class="heatmap-wrap">
+          <table class="heatmap realtime-heatmap">
+            <thead>
+              <tr>
+                <th class="th-act">Activity</th>
+                <th v-for="col in realtimeStreamCols" :key="col.streamKey">{{ col.label }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="group in realtimeHeatGroups" :key="group.name">
+                <tr class="grp-hdr">
+                  <td class="act-label" :colspan="1 + realtimeStreamCols.length">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
+                </tr>
+                <tr v-for="row in group.rows" :key="row.activity">
+                  <td class="act-label"><span class="act-name">{{ row.activity }}</span></td>
+                  <td class="heat-td" v-for="col in realtimeStreamCols" :key="col.streamKey">
+                    <div class="heat-cell" :style="realtimeCellStyleForStream(row, col.streamKey)" :title="realtimeCellTitleForStream(row, col.streamKey)">
+                      <span class="cv">{{ realtimeCellValForStream(row, col.streamKey) }}</span>
+                      <span class="cf" v-if="row['factor_'+realtimeDay] !== undefined">×{{ row['factor_'+realtimeDay]?.toFixed(2) }}</span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        </div>
+      </template>
+    </div>
+    <div class="save-bar">
+      <button class="btn btn-secondary" @click="loadRealtime">Refresh Realtime</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, nextTick } = Vue;
+const API = '/api';
+
+// ── Per-stream colours, light/dark aware ─────────────────────────────────
+function streamStyle(stream, lightMode) {
+  if (lightMode) {
+    const map = {
+      fresh: { bg: 'rgba(8,145,178,0.10)',  color: '#0c4a6e', border: '1px solid rgba(8,145,178,0.32)' },
+      grey:  { bg: 'rgba(71,85,105,0.09)',  color: '#1e293b', border: '1px solid rgba(71,85,105,0.28)' },
+      back:  { bg: 'rgba(220,38,38,0.08)',  color: '#7f1d1d', border: '1px solid rgba(220,38,38,0.26)' },
+    };
+    return map[stream] ?? map.fresh;
+  }
+  const map = {
+    fresh: { bg: 'rgba(34,211,238,0.14)',  color: '#e0f2fe', border: '1px solid rgba(34,211,238,0.30)' },
+    grey:  { bg: 'rgba(148,163,184,0.14)', color: '#e2e8f0', border: '1px solid rgba(148,163,184,0.30)' },
+    back:  { bg: 'rgba(248,113,113,0.14)', color: '#fecaca', border: '1px solid rgba(248,113,113,0.30)' },
+  };
+  return map[stream] ?? map.fresh;
+}
+
+/** Empty cleared number inputs become "" in Vue; coerce before API JSON. */
+function coerceInt(v, def = 0) {
+  if (v === '' || v === null || v === undefined) return def;
+  const n = parseInt(String(v), 10);
+  return Number.isFinite(n) ? n : def;
+}
+function coerceFloat(v, def = 0) {
+  if (v === '' || v === null || v === undefined) return def;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : def;
+}
+function coerceOptFloat(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+const TANK_LEVEL_CHECKS = [
+  { key: 'fresh', field: 'Current Fresh Tank Level', current: 'current_fresh_gal', capacity: 'fresh_capacity_gal' },
+  { key: 'grey',  field: 'Current Grey Tank Level',  current: 'current_grey_gal',  capacity: 'grey_capacity_gal' },
+  { key: 'black', field: 'Current Black Tank Level', current: 'current_black_gal', capacity: 'black_capacity_gal' },
+];
+
+const OCCUPANT_ERROR = 'At least one person is required to compute a water plan.';
+
+function buildTankLevelErrors(t) {
+  if (!t) return {};
+  const errors = {};
+  for (const { key, current, capacity } of TANK_LEVEL_CHECKS) {
+    const cap = coerceFloat(t[capacity], 0);
+    if (coerceFloat(t[current], 0) > cap) {
+      errors[key] = `Exceeds capacity (${cap} gal)`;
+    }
+  }
+  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
+    errors.target_autonomy = 'Target Autonomy Days must be greater than 0';
+  }
+  return errors;
+}
+
+function tankLevelErrorSummary(t) {
+  if (!t) return '';
+  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
+    return 'Target Autonomy Days must be greater than 0';
+  }
+  const fields = TANK_LEVEL_CHECKS
+    .filter(({ current, capacity }) => coerceFloat(t[current], 0) > coerceFloat(t[capacity], 0))
+    .map(({ field, capacity }) => `${field} (${coerceFloat(t[capacity], 0)} gal)`);
+  if (!fields.length) return '';
+  return `Please fix input for ${fields.join(', ')}.`;
+}
+
+function occupantErrorSummary(userTypes) {
+  if (!userTypes?.length) return '';
+  const total = userTypes.reduce((s, u) => s + (Number(u.count) || 0), 0);
+  return total < 1 ? OCCUPANT_ERROR : '';
+}
+
+function parseSaveError(text, status) {
+  try {
+    const body = JSON.parse(text);
+    if (Array.isArray(body.detail)) {
+      const msgs = body.detail
+        .map(d => (d.msg || '').replace(/^Value error,\s*/i, ''))
+        .filter(Boolean);
+      if (msgs.length) return msgs.join(' ');
+    }
+  } catch (_) {}
+  return status === 422
+    ? 'Invalid input. Please check your tank levels and try again.'
+    : `Server error (${status}).`;
+}
+
+createApp({
+  data() {
+    return {
+      tab: 'input',
+      inputs: null,
+      results: null,
+      saving: false,
+      saveMsg: '',
+      saveError: false,
+      heatStream: 'fresh',
+      realtime: null,
+      realtimeDay: 1,
+      realtimeHeatStream: 'fresh',
+      currentVersion: '0.4',
+      lightMode: false,
+    };
+  },
+  computed: {
+    adultsTotal() {
+      return this.inputs?.user_types?.filter(u=>!u.is_child).reduce((s,u)=>s+(u.count||0),0) ?? 0;
+    },
+    totalOccupants() {
+      return this.inputs?.user_types?.reduce((s,u)=>s+(u.count||0),0) ?? 0;
+    },
+    occupantErrorMessage() { return OCCUPANT_ERROR; },
+    hasOccupantErrors() { return this.totalOccupants < 1; },
+    totalFresh() { return this.results?.activity_results?.reduce((s,r)=>s+(r.daily_fresh_gal||0),0) ?? 0; },
+    totalGrey()  { return this.results?.activity_results?.reduce((s,r)=>s+(r.grey_added_gal||0),0)  ?? 0; },
+    totalBlack() { return this.results?.activity_results?.reduce((s,r)=>s+(r.black_added_gal||0),0) ?? 0; },
+    greywaterRecycle: {
+      get() { return !!(this.inputs?.tank_environment?.greywater_recycle); },
+      set(v) { if (this.inputs?.tank_environment) this.inputs.tank_environment.greywater_recycle = v ? 1 : 0; },
+    },
+    driftPct() { return ((this.inputs?.tank_environment?.drift??0)*100).toFixed(0)+'%'; },
+    alertThresholdPct() { return Math.round((this.inputs?.tank_environment?.alert_threshold ?? 0.10) * 100); },
+    driftSd()  { return ((this.inputs?.tank_environment?.drift??0)/2).toFixed(2); },
+    driftLo()  { return (1-(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
+    driftHi()  { return (1+(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
+    tankLevelErrors() { return buildTankLevelErrors(this.inputs?.tank_environment); },
+    hasTankLevelErrors() { return Object.keys(this.tankLevelErrors).length > 0; },
+    hasInputErrors() { return this.hasTankLevelErrors || this.hasOccupantErrors; },
+    saveBarMessage() {
+      const occupantSummary = occupantErrorSummary(this.inputs?.user_types);
+      if (occupantSummary) return occupantSummary;
+      const summary = tankLevelErrorSummary(this.inputs?.tank_environment);
+      if (summary) return summary;
+      return this.saveMsg;
+    },
+    saveBarIsError() {
+      return this.hasInputErrors || this.saveError;
+    },
+    heatDayNums() { return Array.from({length: this.results?.target_days||0},(_,i)=>i+1); },
+    streamKey()   { return this.heatStream==='black'?'back':this.heatStream; },
+
+    stabilityScorePct() {
+      const raw = Number(this.results?.stability_score?.score_pct);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.max(0, Math.min(100, raw));
+    },
+    supportStatusLabel() {
+      const fromApi = this.results?.stability_score?.status ?? this.results?.stability_score?.rating;
+      if (fromApi === 'On track' || fromApi === 'Needs attention' || fromApi === 'Not supported') {
+        return fromApi;
+      }
+      const pct = this.stabilityScorePct;
+      if (pct >= 80) return 'On track';
+      if (pct >= 50) return 'Needs attention';
+      return 'Not supported';
+    },
+    supportStatusToneClass() {
+      const pct = this.stabilityScorePct;
+      if (pct >= 80) return 'tone-on-track';
+      if (pct >= 50) return 'tone-needs-attention';
+      return 'tone-not-supported';
+    },
+    planOutlookHeadline() {
+      return this.supportStatusLabel;
+    },
+
+    // From backend API (Daily Usage Heatmap calculations)
+    heatRange() {
+      const ranges = this.results?.heat_ranges?.[this.streamKey];
+      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
+    },
+    heatGroups() {
+      return this.results?.heat_groups ?? [];
+    },
+    realtimeDays() {
+      return this.realtime?.target_days ? Array.from({ length: this.realtime.target_days }, (_, i) => i + 1) : [];
+    },
+    currentDayData() {
+      if (!this.realtime?.days) return null;
+      return this.realtime.days.find(d => d.day_num === this.realtimeDay) || null;
+    },
+    realtimeHeatGroups() {
+      return this.realtime?.heat_groups ?? [];
+    },
+    realtimeStreamCols() {
+      return [
+        { streamKey: 'fresh', label: 'Fresh' },
+        { streamKey: 'grey',  label: 'Grey' },
+        { streamKey: 'back',  label: 'Black' },
+      ];
+    },
+    realtimeStreamKey() {
+      return this.realtimeHeatStream === 'black' ? 'back' : this.realtimeHeatStream;
+    },
+    realtimeHeatRange() {
+      const ranges = this.realtime?.heat_ranges?.[this.realtimeStreamKey];
+      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
+    },
+  },
+
+  watch: {
+    heatStream() { nextTick(()=>this.drawScale()); },
+    results()    { nextTick(()=>this.drawScale()); },
+    realtimeHeatStream() { nextTick(()=>this.drawRealtimeScale()); },
+    realtime()   { nextTick(()=>this.drawRealtimeScale()); },
+    realtimeDay() { nextTick(()=>this.drawRealtimeScale()); },
+  },
+
+  mounted() {
+    this.loadInputs();
+    this.refreshResults();
+    this.detectVersion();
+    if (localStorage.getItem('wie-theme') === 'light') {
+      this.lightMode = true;
+      document.body.classList.add('light-mode');
+    }
+  },
+
+  methods: {
+    toggleLightMode() {
+      this.lightMode = !this.lightMode;
+      if (this.lightMode) {
+        document.body.classList.add('light-mode');
+        localStorage.setItem('wie-theme', 'light');
+      } else {
+        document.body.classList.remove('light-mode');
+        localStorage.setItem('wie-theme', 'dark');
+      }
+    },
+    detectVersion() {
+      const path = window.location.pathname;
+      if (path.includes('/v0/0.1') || path.includes('/v0/0.1.html')) {
+        this.currentVersion = '0.1';
+      } else if (path.includes('/v0/0.2') || path.includes('/v0/0.2.html')) {
+        this.currentVersion = '0.2';
+      } else if (path.includes('/v0/0.3') || path.includes('/v0/0.3.html')) {
+        this.currentVersion = '0.3';
+      } else {
+        this.currentVersion = '0.4';
+      }
+    },
+    onVersionChange(e) {
+      const version = e.target.value;
+      if (version === this.currentVersion) return;
+      if (version === '0.1') {
+        window.location.href = '/static/v0/0.1.html';
+      } else if (version === '0.2') {
+        window.location.href = '/static/v0/0.2.html';
+      } else if (version === '0.3') {
+        window.location.href = '/static/v0/0.3.html';
+      } else {
+        window.location.href = '/static/v0/0.4.html';
+      }
+    },
+    async loadInputs() {
+      try { this.inputs = await (await fetch(API+'/inputs')).json(); }
+      catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
+    },
+    async refreshResults() {
+      try { this.results = await (await fetch(API+'/results')).json(); }
+      catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
+    },
+    userCount(ut) { return this.inputs?.user_types?.find(x=>x.name===ut)?.count??0; },
+    normalizeInputsBeforeSave() {
+      if (!this.inputs) return;
+      for (const u of this.inputs.user_types) {
+        u.count = coerceInt(u.count, 0);
+        u.is_child = coerceInt(u.is_child, 0);
+      }
+      const t = this.inputs.tank_environment;
+      if (t) {
+        t.fresh_capacity_gal = coerceFloat(t.fresh_capacity_gal, 100);
+        t.grey_capacity_gal = coerceFloat(t.grey_capacity_gal, 80);
+        t.black_capacity_gal = coerceFloat(t.black_capacity_gal, 40);
+        t.current_fresh_gal = coerceFloat(t.current_fresh_gal, 100);
+        t.current_grey_gal = coerceFloat(t.current_grey_gal, 0);
+        t.current_black_gal = coerceFloat(t.current_black_gal, 0);
+        t.climate_multiplier = coerceFloat(t.climate_multiplier, 1);
+        t.target_autonomy_days = coerceFloat(t.target_autonomy_days, 5);
+        t.drift = coerceFloat(t.drift, 0);
+        t.alert_threshold = coerceFloat(t.alert_threshold, 0.1);
+        t.greywater_recycle = t.greywater_recycle ? 1 : 0;
+      }
+      for (const b of this.inputs.behavior_multipliers) {
+        b.shower_mult = coerceFloat(b.shower_mult, 0);
+        b.sink_mult = coerceFloat(b.sink_mult, 0);
+        b.toilet_mult = coerceFloat(b.toilet_mult, 0);
+      }
+      for (const a of this.inputs.activities) {
+        a.flow_gal_per_min = coerceOptFloat(a.flow_gal_per_min);
+        a.duration_min = coerceOptFloat(a.duration_min);
+        a.events_per_day_per_person = coerceOptFloat(a.events_per_day_per_person);
+        a.gal_per_unit = coerceOptFloat(a.gal_per_unit);
+        a.grey_pct = coerceFloat(a.grey_pct, 0);
+        a.black_pct = coerceFloat(a.black_pct, 0);
+      }
+    },
+    async saveInputs() {
+      this.saving=true; this.saveMsg=''; this.saveError=false;
+      try {
+        this.normalizeInputsBeforeSave();
+        if (occupantErrorSummary(this.inputs.user_types)) return;
+        if (tankLevelErrorSummary(this.inputs.tank_environment)) return;
+        const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
+        if (!r.ok) {
+          const text = await r.text();
+          throw new Error(parseSaveError(text, r.status));
+        }
+        this.saveMsg='Saved. Plan updated.';
+        await this.refreshResults();
+      } catch(e) { this.saveMsg='Save failed: '+e.message; this.saveError=true; }
+      finally { this.saving=false; }
+    },
+    onSeedInput(e) {
+      const v=e.target.value.trim();
+      this.inputs.tank_environment.drift_seed = v===''?null:parseInt(v,10);
+    },
+    onAlertThresholdInput(e) {
+      const v = parseFloat(e.target.value);
+      if (!Number.isNaN(v)) this.inputs.tank_environment.alert_threshold = Math.max(0, Math.min(1, v / 100));
+    },
+    statusClass(s) {
+      if (!s) return '';
+      if (s === '✓') return 'status-tick';
+      if (s.includes('Full Autonomy')) return 'status-ok';
+      if (s.includes('Low')||s.includes('Full')||s.includes('Good')||s.includes('Marginal')) return 'status-warn';
+      return 'status-bad';
+    },
+    waterCardStatus(tank) {
+      const limiting = this.results?.stability_score?.limiting_tank;
+      if (limiting === tank) return tank === 'Fresh' ? 'Low' : 'Getting full';
+      return 'Ok';
+    },
+    waterCardIcon(tank) {
+      const status = this.waterCardStatus(tank);
+      if (status === 'Ok') return '✓';
+      return '⚠';
+    },
+    waterCardTone(tank) {
+      return this.waterCardStatus(tank) === 'Ok' ? 'ok' : 'warn';
+    },
+    waterCardPlanFoot(tank) {
+      const limiting = this.results?.stability_score?.limiting_tank;
+      if (limiting !== tank) return 'Extra margin';
+      return tank === 'Fresh' ? 'Refill timing' : 'Dump timing';
+    },
+    waterCardPlanIcon(tank) {
+      const limiting = this.results?.stability_score?.limiting_tank;
+      if (limiting !== tank) return '○';
+      return '→';
+    },
+
+    // ── Heatmap ─────────────────────────────────────────────
+    norm(row, d) {
+      const v=row[`${this.streamKey}_${d}`]??0, {min,max}=this.heatRange;
+      return Math.max(0,Math.min(1,(v-min)/(max-min)));
+    },
+    cellStyle(row, d) {
+      const s = streamStyle(this.streamKey, this.lightMode);
+      const factor = row[`factor_${d}`];
+      let border = s.border;
+      if (factor != null && this.results?.drift > 0) {
+        const dev = Math.abs(factor - 1.0);
+        const alpha = Math.min(0.35 + dev/(this.results.drift+0.001)*0.65, 1).toFixed(2);
+        border = factor > 1.005
+          ? `1px solid rgba(251,191,36,${alpha})`
+          : factor < 0.995
+            ? `1px solid rgba(34,211,238,${alpha})`
+            : s.border;
+      }
+      return { background: s.bg, color: s.color, border };
+    },
+    cellVal(row, d) {
+      const v = row[`${this.streamKey}_${d}`];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    cellTitle(row, d) {
+      const v=row[`${this.streamKey}_${d}`], f=row[`factor_${d}`];
+      return `${row.activity} · Day ${d} · ${this.heatStream}: ${v?.toFixed(3)} gal`+(f!=null?`  (×${f.toFixed(4)})`:'');
+    },
+
+    drawScale() { /* no gradient; uniform colours */ },
+
+    async loadRealtime() {
+      try {
+        this.realtime = await (await fetch(API + '/realtime')).json();
+        if (this.realtime?.days?.length && !this.realtimeDays.includes(this.realtimeDay)) {
+          this.realtimeDay = this.realtime.days[0].day_num;
+        }
+        nextTick(() => this.drawRealtimeScale());
+      } catch (e) {
+        this.saveMsg = 'Realtime load failed: ' + e.message;
+        this.saveError = true;
+      }
+    },
+    dayAlert(dayNum) {
+      const d = this.realtime?.days?.find(x => x.day_num === dayNum);
+      return d?.alert === true;
+    },
+    realtimeHeatRangeForStream(streamKey) {
+      const ranges = this.realtime?.heat_ranges?.[streamKey];
+      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
+    },
+    realtimeNormForStream(row, streamKey) {
+      const d = this.realtimeDay;
+      const v = row[streamKey + '_' + d] ?? 0;
+      const { min, max } = this.realtimeHeatRangeForStream(streamKey);
+      return Math.max(0, Math.min(1, (max > min ? (v - min) / (max - min) : 0)));
+    },
+    realtimeCellStyleForStream(row, streamKey) {
+      const s = streamStyle(streamKey, this.lightMode);
+      const factor = row['factor_' + this.realtimeDay];
+      let border = s.border;
+      if (factor != null && this.realtime?.baseline) {
+        const dev = Math.abs(factor - 1.0);
+        const alpha = Math.min(0.35 + dev * 0.65, 1).toFixed(2);
+        border = factor > 1.005
+          ? '1px solid rgba(251,191,36,' + alpha + ')'
+          : factor < 0.995
+            ? '1px solid rgba(34,211,238,' + alpha + ')'
+            : s.border;
+      }
+      return { background: s.bg, color: s.color, border };
+    },
+    realtimeCellValForStream(row, streamKey) {
+      const v = row[streamKey + '_' + this.realtimeDay];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    realtimeCellTitleForStream(row, streamKey) {
+      const v = row[streamKey + '_' + this.realtimeDay];
+      const f = row['factor_' + this.realtimeDay];
+      const streamLabel = streamKey === 'back' ? 'Black' : (streamKey === 'fresh' ? 'Fresh' : 'Grey');
+      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + streamLabel + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
+    },
+    realtimeNorm(row) {
+      const d = this.realtimeDay;
+      const v = row[this.realtimeStreamKey + '_' + d] ?? 0;
+      const { min, max } = this.realtimeHeatRange;
+      return Math.max(0, Math.min(1, (v - min) / (max - min)));
+    },
+    realtimeCellStyle(row) {
+      const s = streamStyle(this.realtimeStreamKey, this.lightMode);
+      const factor = row['factor_' + this.realtimeDay];
+      let border = s.border;
+      if (factor != null && this.realtime?.baseline) {
+        const dev = Math.abs(factor - 1.0);
+        const alpha = Math.min(0.35 + dev * 0.65, 1).toFixed(2);
+        border = factor > 1.005
+          ? '1px solid rgba(251,191,36,' + alpha + ')'
+          : factor < 0.995
+            ? '1px solid rgba(34,211,238,' + alpha + ')'
+            : s.border;
+      }
+      return { background: s.bg, color: s.color, border };
+    },
+    realtimeCellVal(row) {
+      const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    realtimeCellTitle(row) {
+      const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
+      const f = row['factor_' + this.realtimeDay];
+      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + this.realtimeHeatStream + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
+    },
+    drawRealtimeScale() { /* no gradient; uniform colours */ },
+
+    actionIcon(category) {
+      return {
+        gap_summary:       '!',
+        service_stop:      '×',
+        starting_state:    '↑',
+        feature_toggle:    '↻',
+        activity_reduction:'↓',
+      }[category] ?? '·';
+    },
+    formatRecommendedActionText(text) {
+      if (!text) return text;
+      return text.replace(/\b(fresh|grey|black)\s+tank(s)?\b/gi, (match, stream, plural = '') => {
+        return `${stream} water tank${plural}`;
+      });
+    },
+  },
+}).mount('#app');
+</script>
+</body>
+</html>

@@ -89,7 +89,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def index():
-    return FileResponse(Path(__file__).parent / "static" / "v0" / "0.3.html")
+    return FileResponse(Path(__file__).parent / "static" / "v0" / "0.4.html")
 
 
 def _cors_allow_origins() -> list[str]:
@@ -212,6 +212,16 @@ class InputsUpdate(BaseModel):
     tank_environment:     TankEnvironmentUpdate | None = None
     behavior_multipliers: list[BehaviorMultiplierUpdate] | None = None
     activities:           list[ActivityUpdate] | None = None
+
+    @model_validator(mode="after")
+    def require_at_least_one_occupant(self):
+        if self.user_types is not None:
+            total = sum(u.count for u in self.user_types)
+            if total < 1:
+                raise ValueError(
+                    "At least one person is required to compute a water plan."
+                )
+        return self
 
 
 # ── Daily Usage Heatmap helpers ───────────────────────────────────────────────

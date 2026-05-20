@@ -497,7 +497,8 @@ def compute_and_store(conn: sqlite3.Connection):
 
     # ── Stability Score
     min_days = min(fmt(d_fresh), fmt(d_grey), fmt(d_black))
-    score    = min(min_days / target_days, 1.0) * 100
+    target_days_safe = max(1.0, float(target_days))
+    score    = min(min_days / target_days_safe, 1.0) * 100
     limiting = (
         "Fresh" if fmt(d_fresh) <= fmt(d_grey) and fmt(d_fresh) <= fmt(d_black)
         else ("Grey" if fmt(d_grey) <= fmt(d_black) else "Black")
