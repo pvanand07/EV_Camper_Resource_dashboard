@@ -10,8 +10,9 @@ Changes from original:
 - get_conn() context manager acquires the lock and yields the shared conn.
 - PUT /api/inputs triggers compute_and_store() after saving — GETs no longer do.
 - GET /api/results and GET /api/realtime are now pure reads.
-- TankEnvironmentUpdate gains Pydantic validators: non-negative gallons,
-  current ≤ capacity, drift ∈ [0, 1], climate_multiplier > 0.
+- TankEnvironmentUpdate gains Pydantic validators: tank capacity > 0,
+  non-negative current levels, current ≤ capacity, drift ∈ [0, 1],
+  climate_multiplier > 0.
 - Heatmap pivot key renamed "back" → "black" (was a typo) in both
   get_results() and get_realtime(), and in _heatmap_ranges().
 """
@@ -146,6 +147,15 @@ class TankEnvironmentUpdate(BaseModel):
 
     @field_validator(
         "fresh_capacity_gal", "grey_capacity_gal", "black_capacity_gal",
+        mode="before",
+    )
+    @classmethod
+    def capacity_must_be_positive(cls, v):
+        if v is not None and float(v) <= 0:
+            raise ValueError("Tank capacity must be greater than 0")
+        return v
+
+    @field_validator(
         "current_fresh_gal", "current_grey_gal", "current_black_gal",
         "alert_threshold",
         mode="before",

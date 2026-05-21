@@ -524,9 +524,21 @@
     <div class="section section-tank" v-if="inputs?.tank_environment">
       <h2>Section 2 — Tank & Environment</h2>
       <div class="form-grid">
-        <div class="form-row"><label>Fresh Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" /></div>
-        <div class="form-row"><label>Grey Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" /></div>
-        <div class="form-row"><label>Black Tank Capacity (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" /></div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.fresh_capacity }">
+          <label>Fresh Tank Capacity (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" />
+          <span class="field-error" v-if="tankLevelErrors.fresh_capacity">{{ tankLevelErrors.fresh_capacity }}</span>
+        </div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.grey_capacity }">
+          <label>Grey Tank Capacity (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" />
+          <span class="field-error" v-if="tankLevelErrors.grey_capacity">{{ tankLevelErrors.grey_capacity }}</span>
+        </div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.black_capacity }">
+          <label>Black Tank Capacity (gal)</label>
+          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" />
+          <span class="field-error" v-if="tankLevelErrors.black_capacity">{{ tankLevelErrors.black_capacity }}</span>
+        </div>
         <div class="form-row" :class="{ invalid: tankLevelErrors.fresh }">
           <label>Current Fresh Tank Level (gal)</label>
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" />
@@ -966,20 +978,33 @@ function coerceOptFloat(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+const TANK_CAPACITY_CHECKS = [
+  { key: 'fresh_capacity', field: 'Fresh Tank Capacity', capacity: 'fresh_capacity_gal' },
+  { key: 'grey_capacity',  field: 'Grey Tank Capacity',  capacity: 'grey_capacity_gal' },
+  { key: 'black_capacity', field: 'Black Tank Capacity', capacity: 'black_capacity_gal' },
+];
+
 const TANK_LEVEL_CHECKS = [
   { key: 'fresh', field: 'Current Fresh Tank Level', current: 'current_fresh_gal', capacity: 'fresh_capacity_gal' },
   { key: 'grey',  field: 'Current Grey Tank Level',  current: 'current_grey_gal',  capacity: 'grey_capacity_gal' },
   { key: 'black', field: 'Current Black Tank Level', current: 'current_black_gal', capacity: 'black_capacity_gal' },
 ];
 
+const CAPACITY_ERROR = 'Tank capacity must be greater than 0';
 const OCCUPANT_ERROR = 'At least one person is required to compute a water plan.';
 const OCCUPANT_COUNT_ERROR = 'People counts must be zero or positive integers.';
 
 function buildTankLevelErrors(t) {
   if (!t) return {};
   const errors = {};
+  for (const { key, capacity } of TANK_CAPACITY_CHECKS) {
+    if (coerceFloat(t[capacity], 0) <= 0) {
+      errors[key] = CAPACITY_ERROR;
+    }
+  }
   for (const { key, current, capacity } of TANK_LEVEL_CHECKS) {
     const cap = coerceFloat(t[capacity], 0);
+    if (cap <= 0) continue;
     if (coerceFloat(t[current], 0) > cap) {
       errors[key] = `Exceeds capacity (${cap} gal)`;
     }
@@ -992,11 +1017,20 @@ function buildTankLevelErrors(t) {
 
 function tankLevelErrorSummary(t) {
   if (!t) return '';
+  const capacityFields = TANK_CAPACITY_CHECKS
+    .filter(({ capacity }) => coerceFloat(t[capacity], 0) <= 0)
+    .map(({ field }) => field);
+  if (capacityFields.length) {
+    return `Please fix input for ${capacityFields.join(', ')}.`;
+  }
   if (coerceFloat(t.target_autonomy_days, 5) < 1) {
     return 'Target Autonomy Days must be greater than 0';
   }
   const fields = TANK_LEVEL_CHECKS
-    .filter(({ current, capacity }) => coerceFloat(t[current], 0) > coerceFloat(t[capacity], 0))
+    .filter(({ current, capacity }) => {
+      const cap = coerceFloat(t[capacity], 0);
+      return cap > 0 && coerceFloat(t[current], 0) > cap;
+    })
     .map(({ field, capacity }) => `${field} (${coerceFloat(t[capacity], 0)} gal)`);
   if (!fields.length) return '';
   return `Please fix input for ${fields.join(', ')}.`;

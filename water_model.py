@@ -392,9 +392,9 @@ def compute_and_store(conn: sqlite3.Connection):
          grey_pct, black_pct, sh, sk, tl, ad, ch) in cur.fetchall():
 
         if sh:
-            fresh = eff_shower * flow * dur * events
+            fresh = eff_shower * flow * dur * events * climate_mult
         elif sk:
-            fresh = eff_sink   * flow * dur * events
+            fresh = eff_sink   * flow * dur * events * climate_mult
         elif tl:
             fresh = eff_toilet * gal_unit * events
         elif ad:
