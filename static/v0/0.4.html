@@ -929,22 +929,22 @@ const TANK_NAMES = ['Fresh', 'Grey', 'Black'];
 const REALTIME_STREAM_COLS = [
   { streamKey: 'fresh', label: 'Fresh' },
   { streamKey: 'grey',  label: 'Grey'  },
-  { streamKey: 'back',  label: 'Black' },
+  { streamKey: 'black', label: 'Black' },
 ];
 
-const STREAM_LABELS = { fresh: 'Fresh', grey: 'Grey', back: 'Black' };
+const STREAM_LABELS = { fresh: 'Fresh', grey: 'Grey', black: 'Black' };
 
 // Heat-cell colour palette per stream and theme
 const STREAM_PALETTE = {
   dark: {
     fresh: { bg: 'rgba(34,211,238,0.14)',  color: '#e0f2fe', border: 'rgba(34,211,238,0.30)' },
     grey:  { bg: 'rgba(148,163,184,0.14)', color: '#e2e8f0', border: 'rgba(148,163,184,0.30)' },
-    back:  { bg: 'rgba(248,113,113,0.14)', color: '#fecaca', border: 'rgba(248,113,113,0.30)' },
+    black: { bg: 'rgba(248,113,113,0.14)', color: '#fecaca', border: 'rgba(248,113,113,0.30)' },
   },
   light: {
     fresh: { bg: 'rgba(8,145,178,0.10)',  color: '#0c4a6e', border: 'rgba(8,145,178,0.32)' },
     grey:  { bg: 'rgba(71,85,105,0.09)',  color: '#1e293b', border: 'rgba(71,85,105,0.28)' },
-    back:  { bg: 'rgba(220,38,38,0.08)',  color: '#7f1d1d', border: 'rgba(220,38,38,0.26)' },
+    black: { bg: 'rgba(220,38,38,0.08)',  color: '#7f1d1d', border: 'rgba(220,38,38,0.26)' },
   },
 };
 
@@ -1172,7 +1172,7 @@ createApp({
 
     // ── Heatmap (Plan) ───────────────────────────────────
     heatDayNums() { return Array.from({ length: this.results?.target_days || 0 }, (_, i) => i + 1); },
-    streamKey()   { return this.heatStream === 'black' ? 'back' : this.heatStream; },
+    streamKey()   { return this.heatStream; },
     heatGroups()  { return this.results?.heat_groups ?? []; },
 
     // ── Realtime ─────────────────────────────────────────
