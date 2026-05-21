@@ -61,7 +61,6 @@
     .form-row.invalid input { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.15); }
     .form-row.invalid input:focus { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.25); }
     .field-error { font-size: 0.78rem; color: var(--danger); line-height: 1.3; }
-    .section-error { margin-top: 0.5rem; }
 
     /* Drift */
     .drift-row { grid-column: 1/-1; background: #0d1b26; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
@@ -511,54 +510,53 @@
     <div class="section section-people" v-if="inputs">
       <h2>Section 1 — People <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
       <div class="form-grid">
-        <div class="form-row" :class="{ invalid: peopleCountErrors[userTypeKey(u)] }" v-for="u in inputs.user_types" :key="u.name+u.is_child">
+        <div class="form-row" :class="{ invalid: peopleErrors[userTypeKey(u)] }" v-for="u in inputs.user_types" :key="u.name+u.is_child">
           <label>{{ u.name }}<span v-if="u.is_child"> (children)</span></label>
           <input type="number" min="0" step="1" v-model.number="u.count" :readonly="u.name==='Adults Total'" />
-          <span class="field-error" v-if="peopleCountErrors[userTypeKey(u)]">{{ peopleCountErrors[userTypeKey(u)] }}</span>
+          <span class="field-error" v-if="peopleErrors[userTypeKey(u)]">{{ peopleErrors[userTypeKey(u)] }}</span>
         </div>
       </div>
       <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Adults Total = {{ adultsTotal }} (auto-sum)</p>
-      <p class="field-error section-error" v-if="hasOccupantTotalError">{{ occupantErrorMessage }}</p>
     </div>
 
     <div class="section section-tank" v-if="inputs?.tank_environment">
       <h2>Section 2 — Tank & Environment</h2>
       <div class="form-grid">
-        <div class="form-row" :class="{ invalid: tankLevelErrors.fresh_capacity }">
+        <div class="form-row" :class="{ invalid: tankErrors.fresh_capacity }">
           <label>Fresh Tank Capacity (gal)</label>
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" />
-          <span class="field-error" v-if="tankLevelErrors.fresh_capacity">{{ tankLevelErrors.fresh_capacity }}</span>
+          <span class="field-error" v-if="tankErrors.fresh_capacity">{{ tankErrors.fresh_capacity }}</span>
         </div>
-        <div class="form-row" :class="{ invalid: tankLevelErrors.grey_capacity }">
+        <div class="form-row" :class="{ invalid: tankErrors.grey_capacity }">
           <label>Grey Tank Capacity (gal)</label>
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" />
-          <span class="field-error" v-if="tankLevelErrors.grey_capacity">{{ tankLevelErrors.grey_capacity }}</span>
+          <span class="field-error" v-if="tankErrors.grey_capacity">{{ tankErrors.grey_capacity }}</span>
         </div>
-        <div class="form-row" :class="{ invalid: tankLevelErrors.black_capacity }">
+        <div class="form-row" :class="{ invalid: tankErrors.black_capacity }">
           <label>Black Tank Capacity (gal)</label>
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" />
-          <span class="field-error" v-if="tankLevelErrors.black_capacity">{{ tankLevelErrors.black_capacity }}</span>
+          <span class="field-error" v-if="tankErrors.black_capacity">{{ tankErrors.black_capacity }}</span>
         </div>
-        <div class="form-row" :class="{ invalid: tankLevelErrors.fresh }">
+        <div class="form-row" :class="{ invalid: tankErrors.fresh }">
           <label>Current Fresh Tank Level (gal)</label>
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" />
-          <span class="field-error" v-if="tankLevelErrors.fresh">{{ tankLevelErrors.fresh }}</span>
+          <span class="field-error" v-if="tankErrors.fresh">{{ tankErrors.fresh }}</span>
         </div>
-        <div class="form-row" :class="{ invalid: tankLevelErrors.grey }">
+        <div class="form-row" :class="{ invalid: tankErrors.grey }">
           <label>Current Grey Tank Level (gal)</label>
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" />
-          <span class="field-error" v-if="tankLevelErrors.grey">{{ tankLevelErrors.grey }}</span>
+          <span class="field-error" v-if="tankErrors.grey">{{ tankErrors.grey }}</span>
         </div>
-        <div class="form-row" :class="{ invalid: tankLevelErrors.black }">
+        <div class="form-row" :class="{ invalid: tankErrors.black }">
           <label>Current Black Tank Level (gal)</label>
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
-          <span class="field-error" v-if="tankLevelErrors.black">{{ tankLevelErrors.black }}</span>
+          <span class="field-error" v-if="tankErrors.black">{{ tankErrors.black }}</span>
         </div>
         <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
-        <div class="form-row" :class="{ invalid: tankLevelErrors.target_autonomy }">
+        <div class="form-row" :class="{ invalid: tankErrors.target_autonomy }">
           <label>Target Autonomy Days</label>
           <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
-          <span class="field-error" v-if="tankLevelErrors.target_autonomy">{{ tankLevelErrors.target_autonomy }}</span>
+          <span class="field-error" v-if="tankErrors.target_autonomy">{{ tankErrors.target_autonomy }}</span>
         </div>
         <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
         <div class="drift-row">
@@ -654,7 +652,7 @@
 
     <div class="save-bar">
       <button class="btn btn-primary" @click="saveInputs" :disabled="saving || hasInputErrors">Save & Compute</button>
-      <span class="msg" :class="{ err: saveBarIsError }" v-if="saveBarMessage">{{ saveBarMessage }}</span>
+      <span class="msg" :class="{ err: saveError }" v-if="saveMsg">{{ saveMsg }}</span>
     </div>
   </div>
 
@@ -679,42 +677,21 @@
             </div>
           </div>
         </div>
-        <div class="water-card water-card-plan tank-fresh" :class="{ limiting: results.stability_score.limiting_tank === 'Fresh' }">
+        <div
+          v-for="tank in TANK_NAMES"
+          :key="tank"
+          class="water-card water-card-plan"
+          :class="[`tank-${tank.toLowerCase()}`, { limiting: isLimitingTank(tank) }]"
+        >
           <div class="water-card-header">
-            <span class="water-card-title">Fresh</span>
-            <span v-if="results.stability_score.limiting_tank === 'Fresh'" class="water-card-label">Main constraint</span>
+            <span class="water-card-title">{{ tank }}</span>
+            <span v-if="isLimitingTank(tank)" class="water-card-label">Main constraint</span>
           </div>
           <div>
-            <div class="water-card-days">{{ results.stability_score.fresh_days?.toFixed(2) }}<span>days</span></div>
-            <div class="water-card-foot" :class="waterCardTone('Fresh')">
-              <span>{{ waterCardPlanIcon('Fresh') }}</span>
-              <span>{{ waterCardPlanFoot('Fresh') }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="water-card water-card-plan tank-grey" :class="{ limiting: results.stability_score.limiting_tank === 'Grey' }">
-          <div class="water-card-header">
-            <span class="water-card-title">Grey</span>
-            <span v-if="results.stability_score.limiting_tank === 'Grey'" class="water-card-label">Main constraint</span>
-          </div>
-          <div>
-            <div class="water-card-days">{{ results.stability_score.grey_days?.toFixed(2) }}<span>days</span></div>
-            <div class="water-card-foot" :class="waterCardTone('Grey')">
-              <span>{{ waterCardPlanIcon('Grey') }}</span>
-              <span>{{ waterCardPlanFoot('Grey') }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="water-card water-card-plan tank-black" :class="{ limiting: results.stability_score.limiting_tank === 'Black' }">
-          <div class="water-card-header">
-            <span class="water-card-title">Black</span>
-            <span v-if="results.stability_score.limiting_tank === 'Black'" class="water-card-label">Main constraint</span>
-          </div>
-          <div>
-            <div class="water-card-days">{{ results.stability_score.black_days?.toFixed(2) }}<span>days</span></div>
-            <div class="water-card-foot" :class="waterCardTone('Black')">
-              <span>{{ waterCardPlanIcon('Black') }}</span>
-              <span>{{ waterCardPlanFoot('Black') }}</span>
+            <div class="water-card-days">{{ tankDays(tank)?.toFixed(2) }}<span>days</span></div>
+            <div class="water-card-foot" :class="waterCardTone(tank)">
+              <span>{{ waterCardPlanIcon(tank) }}</span>
+              <span>{{ waterCardPlanFoot(tank) }}</span>
             </div>
           </div>
         </div>
@@ -909,19 +886,19 @@
             <thead>
               <tr>
                 <th class="th-act">Activity</th>
-                <th v-for="col in realtimeStreamCols" :key="col.streamKey">{{ col.label }}</th>
+                <th v-for="col in REALTIME_STREAM_COLS" :key="col.streamKey">{{ col.label }}</th>
               </tr>
             </thead>
             <tbody>
               <template v-for="group in realtimeHeatGroups" :key="group.name">
                 <tr class="grp-hdr">
-                  <td class="act-label" :colspan="1 + realtimeStreamCols.length">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
+                  <td class="act-label" :colspan="1 + REALTIME_STREAM_COLS.length">{{ group.icon }}&nbsp;&nbsp;{{ group.name }}</td>
                 </tr>
                 <tr v-for="row in group.rows" :key="row.activity">
                   <td class="act-label"><span class="act-name">{{ row.activity }}</span></td>
-                  <td class="heat-td" v-for="col in realtimeStreamCols" :key="col.streamKey">
-                    <div class="heat-cell" :style="realtimeCellStyleForStream(row, col.streamKey)" :title="realtimeCellTitleForStream(row, col.streamKey)">
-                      <span class="cv">{{ realtimeCellValForStream(row, col.streamKey) }}</span>
+                  <td class="heat-td" v-for="col in REALTIME_STREAM_COLS" :key="col.streamKey">
+                    <div class="heat-cell" :style="realtimeCellStyle(row, col.streamKey)" :title="realtimeCellTitle(row, col.streamKey)">
+                      <span class="cv">{{ realtimeCellVal(row, col.streamKey) }}</span>
                       <span class="cf" v-if="row['factor_'+realtimeDay] !== undefined">×{{ row['factor_'+realtimeDay]?.toFixed(2) }}</span>
                     </div>
                   </td>
@@ -940,127 +917,144 @@
 </div>
 
 <script>
-const { createApp, nextTick } = Vue;
+const { createApp } = Vue;
 const API = '/api';
 
-// ── Per-stream colours, light/dark aware ─────────────────────────────────
-function streamStyle(stream, lightMode) {
-  if (lightMode) {
-    const map = {
-      fresh: { bg: 'rgba(8,145,178,0.10)',  color: '#0c4a6e', border: '1px solid rgba(8,145,178,0.32)' },
-      grey:  { bg: 'rgba(71,85,105,0.09)',  color: '#1e293b', border: '1px solid rgba(71,85,105,0.28)' },
-      back:  { bg: 'rgba(220,38,38,0.08)',  color: '#7f1d1d', border: '1px solid rgba(220,38,38,0.26)' },
-    };
-    return map[stream] ?? map.fresh;
-  }
-  const map = {
-    fresh: { bg: 'rgba(34,211,238,0.14)',  color: '#e0f2fe', border: '1px solid rgba(34,211,238,0.30)' },
-    grey:  { bg: 'rgba(148,163,184,0.14)', color: '#e2e8f0', border: '1px solid rgba(148,163,184,0.30)' },
-    back:  { bg: 'rgba(248,113,113,0.14)', color: '#fecaca', border: '1px solid rgba(248,113,113,0.30)' },
-  };
-  return map[stream] ?? map.fresh;
-}
+// ── Constants ────────────────────────────────────────────────────────────
+const TANK_NAMES = ['Fresh', 'Grey', 'Black'];
 
-/** Empty cleared number inputs become "" in Vue; coerce before API JSON. */
-function coerceInt(v, def = 0) {
-  if (v === '' || v === null || v === undefined) return def;
+const REALTIME_STREAM_COLS = [
+  { streamKey: 'fresh', label: 'Fresh' },
+  { streamKey: 'grey',  label: 'Grey'  },
+  { streamKey: 'back',  label: 'Black' },
+];
+
+const STREAM_LABELS = { fresh: 'Fresh', grey: 'Grey', back: 'Black' };
+
+// Heat-cell colour palette per stream and theme
+const STREAM_PALETTE = {
+  dark: {
+    fresh: { bg: 'rgba(34,211,238,0.14)',  color: '#e0f2fe', border: 'rgba(34,211,238,0.30)' },
+    grey:  { bg: 'rgba(148,163,184,0.14)', color: '#e2e8f0', border: 'rgba(148,163,184,0.30)' },
+    back:  { bg: 'rgba(248,113,113,0.14)', color: '#fecaca', border: 'rgba(248,113,113,0.30)' },
+  },
+  light: {
+    fresh: { bg: 'rgba(8,145,178,0.10)',  color: '#0c4a6e', border: 'rgba(8,145,178,0.32)' },
+    grey:  { bg: 'rgba(71,85,105,0.09)',  color: '#1e293b', border: 'rgba(71,85,105,0.28)' },
+    back:  { bg: 'rgba(220,38,38,0.08)',  color: '#7f1d1d', border: 'rgba(220,38,38,0.26)' },
+  },
+};
+
+// Tank validation rules: capacity must be > 0; current level must not exceed capacity.
+const TANK_RULES = [
+  { stream: 'fresh', capacityField: 'fresh_capacity_gal', currentField: 'current_fresh_gal',
+    capacityErrorKey: 'fresh_capacity', levelErrorKey: 'fresh', label: 'Fresh' },
+  { stream: 'grey',  capacityField: 'grey_capacity_gal',  currentField: 'current_grey_gal',
+    capacityErrorKey: 'grey_capacity',  levelErrorKey: 'grey',  label: 'Grey' },
+  { stream: 'black', capacityField: 'black_capacity_gal', currentField: 'current_black_gal',
+    capacityErrorKey: 'black_capacity', levelErrorKey: 'black', label: 'Black' },
+];
+
+const ACTION_ICONS = {
+  gap_summary:        '!',
+  service_stop:       '×',
+  starting_state:     '↑',
+  feature_toggle:     '↻',
+  activity_reduction: '↓',
+};
+
+// ── Pure helpers ─────────────────────────────────────────────────────────
+const coerceInt   = (v, def = 0) => {
+  if (v === '' || v == null) return def;
   const n = parseInt(String(v), 10);
   return Number.isFinite(n) ? n : def;
-}
-function coerceFloat(v, def = 0) {
-  if (v === '' || v === null || v === undefined) return def;
+};
+const coerceFloat = (v, def = 0) => {
+  if (v === '' || v == null) return def;
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : def;
-}
-function coerceOptFloat(v) {
-  if (v === '' || v === null || v === undefined) return null;
+};
+const coerceOptFloat = (v) => {
+  if (v === '' || v == null) return null;
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : null;
+};
+
+const userTypeKey = (u) => `${u.name}::${u.is_child ? 1 : 0}`;
+
+function streamStyle(streamKey, lightMode) {
+  const palette = STREAM_PALETTE[lightMode ? 'light' : 'dark'];
+  const s = palette[streamKey] ?? palette.fresh;
+  return { bg: s.bg, color: s.color, border: `1px solid ${s.border}` };
 }
 
-const TANK_CAPACITY_CHECKS = [
-  { key: 'fresh_capacity', field: 'Fresh Tank Capacity', capacity: 'fresh_capacity_gal' },
-  { key: 'grey_capacity',  field: 'Grey Tank Capacity',  capacity: 'grey_capacity_gal' },
-  { key: 'black_capacity', field: 'Black Tank Capacity', capacity: 'black_capacity_gal' },
-];
+/** Build heat-cell inline style, optionally tinting the border by drift factor.
+ *  `alphaFn(dev)` returns the border alpha when a deviation should be highlighted;
+ *  pass `null` to keep the default border. */
+function buildHeatCellStyle(streamKey, lightMode, factor, alphaFn) {
+  const s = streamStyle(streamKey, lightMode);
+  let border = s.border;
+  if (factor != null && alphaFn) {
+    const dev = Math.abs(factor - 1.0);
+    const alpha = Math.min(alphaFn(dev), 1).toFixed(2);
+    if (factor > 1.005)      border = `1px solid rgba(251,191,36,${alpha})`;
+    else if (factor < 0.995) border = `1px solid rgba(34,211,238,${alpha})`;
+  }
+  return { background: s.bg, color: s.color, border };
+}
 
-const TANK_LEVEL_CHECKS = [
-  { key: 'fresh', field: 'Current Fresh Tank Level', current: 'current_fresh_gal', capacity: 'fresh_capacity_gal' },
-  { key: 'grey',  field: 'Current Grey Tank Level',  current: 'current_grey_gal',  capacity: 'grey_capacity_gal' },
-  { key: 'black', field: 'Current Black Tank Level', current: 'current_black_gal', capacity: 'black_capacity_gal' },
-];
+function buildHeatCellTitle(activity, day, streamKey, value, factor) {
+  const v = value != null ? value.toFixed(3) : '—';
+  const f = factor != null ? `  (×${factor.toFixed(4)})` : '';
+  return `${activity} · Day ${day} · ${STREAM_LABELS[streamKey]}: ${v} gal${f}`;
+}
 
-const CAPACITY_ERROR = 'Tank capacity must be greater than 0';
-const OCCUPANT_ERROR = 'At least one person is required to compute a water plan.';
-const OCCUPANT_COUNT_ERROR = 'People counts must be zero or positive integers.';
+/** Validate inputs and return per-field error maps. Empty maps = valid. */
+function validateInputs(inputs) {
+  const errors = { tank: {}, people: {} };
+  if (!inputs) return errors;
 
-function buildTankLevelErrors(t) {
-  if (!t) return {};
-  const errors = {};
-  for (const { key, capacity } of TANK_CAPACITY_CHECKS) {
-    if (coerceFloat(t[capacity], 0) <= 0) {
-      errors[key] = CAPACITY_ERROR;
+  // ── Tank validation ─────────────────────────────────────
+  const t = inputs.tank_environment;
+  if (t) {
+    for (const rule of TANK_RULES) {
+      const cap = coerceFloat(t[rule.capacityField], 0);
+      if (cap <= 0) {
+        errors.tank[rule.capacityErrorKey] = 'Tank capacity must be greater than 0';
+        continue; // skip level check if capacity is invalid
+      }
+      if (coerceFloat(t[rule.currentField], 0) > cap) {
+        errors.tank[rule.levelErrorKey] = `Exceeds capacity (${cap} gal)`;
+      }
+    }
+    if (coerceFloat(t.target_autonomy_days, 5) < 1) {
+      errors.tank.target_autonomy = 'Target Autonomy Days must be greater than 0';
     }
   }
-  for (const { key, current, capacity } of TANK_LEVEL_CHECKS) {
-    const cap = coerceFloat(t[capacity], 0);
-    if (cap <= 0) continue;
-    if (coerceFloat(t[current], 0) > cap) {
-      errors[key] = `Exceeds capacity (${cap} gal)`;
+
+  // ── People validation ───────────────────────────────────
+  const types = inputs.user_types ?? [];
+  let hasIndividualError = false;
+  for (const u of types) {
+    const v = Number(u.count);
+    if (!Number.isFinite(v) || !Number.isInteger(v) || v < 0) {
+      errors.people[userTypeKey(u)] = 'People count must be a non-negative integer';
+      hasIndividualError = true;
     }
   }
-  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
-    errors.target_autonomy = 'Target Autonomy Days must be greater than 0';
+  // If no per-row error but total is zero, surface the warning on Adults Total
+  // (the natural rollup cell). Falls back to the first row if not present.
+  if (!hasIndividualError) {
+    const total = types.reduce((s, u) => s + (Number(u.count) || 0), 0);
+    if (total < 1) {
+      const target = types.find(u => u.name === 'Adults Total') ?? types[0];
+      if (target) {
+        errors.people[userTypeKey(target)] = 'Add at least one person to compute a water plan';
+      }
+    }
   }
+
   return errors;
-}
-
-function tankLevelErrorSummary(t) {
-  if (!t) return '';
-  const capacityFields = TANK_CAPACITY_CHECKS
-    .filter(({ capacity }) => coerceFloat(t[capacity], 0) <= 0)
-    .map(({ field }) => field);
-  if (capacityFields.length) {
-    return `Please fix input for ${capacityFields.join(', ')}.`;
-  }
-  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
-    return 'Target Autonomy Days must be greater than 0';
-  }
-  const fields = TANK_LEVEL_CHECKS
-    .filter(({ current, capacity }) => {
-      const cap = coerceFloat(t[capacity], 0);
-      return cap > 0 && coerceFloat(t[current], 0) > cap;
-    })
-    .map(({ field, capacity }) => `${field} (${coerceFloat(t[capacity], 0)} gal)`);
-  if (!fields.length) return '';
-  return `Please fix input for ${fields.join(', ')}.`;
-}
-
-function occupantErrorSummary(userTypes) {
-  if (!userTypes?.length) return '';
-  const total = userTypes.reduce((s, u) => s + (Number(u.count) || 0), 0);
-  return total < 1 ? OCCUPANT_ERROR : '';
-}
-
-function userTypeKey(u) {
-  return `${u.name}::${u.is_child ? 1 : 0}`;
-}
-
-function occupantFieldErrors(userTypes) {
-  if (!userTypes?.length) return {};
-  const errors = {};
-  for (const u of userTypes) {
-    const value = Number(u.count);
-    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
-      errors[userTypeKey(u)] = OCCUPANT_COUNT_ERROR;
-    }
-  }
-  return errors;
-}
-
-function occupantFieldErrorSummary(userTypes) {
-  const errors = occupantFieldErrors(userTypes);
-  return Object.keys(errors).length ? OCCUPANT_COUNT_ERROR : '';
 }
 
 function parseSaveError(text, status) {
@@ -1078,6 +1072,7 @@ function parseSaveError(text, status) {
     : `Server error (${status}).`;
 }
 
+// ── Vue app ──────────────────────────────────────────────────────────────
 createApp({
   data() {
     return {
@@ -1090,63 +1085,52 @@ createApp({
       heatStream: 'fresh',
       realtime: null,
       realtimeDay: 1,
-      realtimeHeatStream: 'fresh',
       currentVersion: '0.4',
       lightMode: false,
+      // Expose constants to template
+      TANK_NAMES,
+      REALTIME_STREAM_COLS,
     };
   },
+
   computed: {
+    // ── Sums ─────────────────────────────────────────────
     adultsTotal() {
-      return this.inputs?.user_types?.filter(u=>!u.is_child).reduce((s,u)=>s+(u.count||0),0) ?? 0;
+      return this.inputs?.user_types?.filter(u => !u.is_child).reduce((s, u) => s + (u.count || 0), 0) ?? 0;
     },
-    totalOccupants() {
-      return this.inputs?.user_types?.reduce((s,u)=>s+(u.count||0),0) ?? 0;
+    totalFresh() { return this.results?.activity_results?.reduce((s, r) => s + (r.daily_fresh_gal || 0), 0) ?? 0; },
+    totalGrey()  { return this.results?.activity_results?.reduce((s, r) => s + (r.grey_added_gal  || 0), 0) ?? 0; },
+    totalBlack() { return this.results?.activity_results?.reduce((s, r) => s + (r.black_added_gal || 0), 0) ?? 0; },
+
+    // ── Validation (single source of truth) ──────────────
+    validation() { return validateInputs(this.inputs); },
+    tankErrors()   { return this.validation.tank; },
+    peopleErrors() { return this.validation.people; },
+    hasInputErrors() {
+      return Object.keys(this.tankErrors).length > 0 || Object.keys(this.peopleErrors).length > 0;
     },
-    peopleCountErrors() { return occupantFieldErrors(this.inputs?.user_types); },
-    hasPeopleCountErrors() { return Object.keys(this.peopleCountErrors).length > 0; },
-    occupantErrorMessage() { return OCCUPANT_ERROR; },
-    hasOccupantTotalError() { return this.totalOccupants < 1; },
-    hasOccupantErrors() { return this.hasPeopleCountErrors || this.hasOccupantTotalError; },
-    totalFresh() { return this.results?.activity_results?.reduce((s,r)=>s+(r.daily_fresh_gal||0),0) ?? 0; },
-    totalGrey()  { return this.results?.activity_results?.reduce((s,r)=>s+(r.grey_added_gal||0),0)  ?? 0; },
-    totalBlack() { return this.results?.activity_results?.reduce((s,r)=>s+(r.black_added_gal||0),0) ?? 0; },
+
+    // ── Drift display ────────────────────────────────────
+    driftPct() { return ((this.inputs?.tank_environment?.drift ?? 0) * 100).toFixed(0) + '%'; },
+    driftSd()  { return ((this.inputs?.tank_environment?.drift ?? 0) / 2).toFixed(2); },
+    driftLo()  { return (1 - (this.inputs?.tank_environment?.drift ?? 0)).toFixed(2); },
+    driftHi()  { return (1 + (this.inputs?.tank_environment?.drift ?? 0)).toFixed(2); },
+    alertThresholdPct() { return Math.round((this.inputs?.tank_environment?.alert_threshold ?? 0.10) * 100); },
+
     greywaterRecycle: {
-      get() { return !!(this.inputs?.tank_environment?.greywater_recycle); },
+      get() { return !!this.inputs?.tank_environment?.greywater_recycle; },
       set(v) { if (this.inputs?.tank_environment) this.inputs.tank_environment.greywater_recycle = v ? 1 : 0; },
     },
-    driftPct() { return ((this.inputs?.tank_environment?.drift??0)*100).toFixed(0)+'%'; },
-    alertThresholdPct() { return Math.round((this.inputs?.tank_environment?.alert_threshold ?? 0.10) * 100); },
-    driftSd()  { return ((this.inputs?.tank_environment?.drift??0)/2).toFixed(2); },
-    driftLo()  { return (1-(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
-    driftHi()  { return (1+(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
-    tankLevelErrors() { return buildTankLevelErrors(this.inputs?.tank_environment); },
-    hasTankLevelErrors() { return Object.keys(this.tankLevelErrors).length > 0; },
-    hasInputErrors() { return this.hasTankLevelErrors || this.hasOccupantErrors; },
-    saveBarMessage() {
-      const occupantFieldSummary = occupantFieldErrorSummary(this.inputs?.user_types);
-      if (occupantFieldSummary) return occupantFieldSummary;
-      const occupantSummary = occupantErrorSummary(this.inputs?.user_types);
-      if (occupantSummary) return occupantSummary;
-      const summary = tankLevelErrorSummary(this.inputs?.tank_environment);
-      if (summary) return summary;
-      return this.saveMsg;
-    },
-    saveBarIsError() {
-      return this.hasInputErrors || this.saveError;
-    },
-    heatDayNums() { return Array.from({length: this.results?.target_days||0},(_,i)=>i+1); },
-    streamKey()   { return this.heatStream==='black'?'back':this.heatStream; },
 
+    // ── Plan / outlook ───────────────────────────────────
     stabilityScorePct() {
       const raw = Number(this.results?.stability_score?.score_pct);
       if (!Number.isFinite(raw)) return 0;
       return Math.max(0, Math.min(100, raw));
     },
-    supportStatusLabel() {
+    planOutlookHeadline() {
       const fromApi = this.results?.stability_score?.status ?? this.results?.stability_score?.rating;
-      if (fromApi === 'On track' || fromApi === 'Needs attention' || fromApi === 'Not supported') {
-        return fromApi;
-      }
+      if (['On track', 'Needs attention', 'Not supported'].includes(fromApi)) return fromApi;
       const pct = this.stabilityScorePct;
       if (pct >= 80) return 'On track';
       if (pct >= 50) return 'Needs attention';
@@ -1158,50 +1142,22 @@ createApp({
       if (pct >= 50) return 'tone-needs-attention';
       return 'tone-not-supported';
     },
-    planOutlookHeadline() {
-      return this.supportStatusLabel;
-    },
 
-    // From backend API (Daily Usage Heatmap calculations)
-    heatRange() {
-      const ranges = this.results?.heat_ranges?.[this.streamKey];
-      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
-    },
-    heatGroups() {
-      return this.results?.heat_groups ?? [];
-    },
+    // ── Heatmap (Plan) ───────────────────────────────────
+    heatDayNums() { return Array.from({ length: this.results?.target_days || 0 }, (_, i) => i + 1); },
+    streamKey()   { return this.heatStream === 'black' ? 'back' : this.heatStream; },
+    heatGroups()  { return this.results?.heat_groups ?? []; },
+
+    // ── Realtime ─────────────────────────────────────────
     realtimeDays() {
-      return this.realtime?.target_days ? Array.from({ length: this.realtime.target_days }, (_, i) => i + 1) : [];
+      return this.realtime?.target_days
+        ? Array.from({ length: this.realtime.target_days }, (_, i) => i + 1)
+        : [];
     },
     currentDayData() {
-      if (!this.realtime?.days) return null;
-      return this.realtime.days.find(d => d.day_num === this.realtimeDay) || null;
+      return this.realtime?.days?.find(d => d.day_num === this.realtimeDay) ?? null;
     },
-    realtimeHeatGroups() {
-      return this.realtime?.heat_groups ?? [];
-    },
-    realtimeStreamCols() {
-      return [
-        { streamKey: 'fresh', label: 'Fresh' },
-        { streamKey: 'grey',  label: 'Grey' },
-        { streamKey: 'back',  label: 'Black' },
-      ];
-    },
-    realtimeStreamKey() {
-      return this.realtimeHeatStream === 'black' ? 'back' : this.realtimeHeatStream;
-    },
-    realtimeHeatRange() {
-      const ranges = this.realtime?.heat_ranges?.[this.realtimeStreamKey];
-      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
-    },
-  },
-
-  watch: {
-    heatStream() { nextTick(()=>this.drawScale()); },
-    results()    { nextTick(()=>this.drawScale()); },
-    realtimeHeatStream() { nextTick(()=>this.drawRealtimeScale()); },
-    realtime()   { nextTick(()=>this.drawRealtimeScale()); },
-    realtimeDay() { nextTick(()=>this.drawRealtimeScale()); },
+    realtimeHeatGroups() { return this.realtime?.heat_groups ?? []; },
   },
 
   mounted() {
@@ -1215,269 +1171,200 @@ createApp({
   },
 
   methods: {
+    // ── Theme & version ──────────────────────────────────
     toggleLightMode() {
       this.lightMode = !this.lightMode;
-      if (this.lightMode) {
-        document.body.classList.add('light-mode');
-        localStorage.setItem('wie-theme', 'light');
-      } else {
-        document.body.classList.remove('light-mode');
-        localStorage.setItem('wie-theme', 'dark');
-      }
+      document.body.classList.toggle('light-mode', this.lightMode);
+      localStorage.setItem('wie-theme', this.lightMode ? 'light' : 'dark');
     },
     detectVersion() {
       const path = window.location.pathname;
-      if (path.includes('/v0/0.1') || path.includes('/v0/0.1.html')) {
-        this.currentVersion = '0.1';
-      } else if (path.includes('/v0/0.2') || path.includes('/v0/0.2.html')) {
-        this.currentVersion = '0.2';
-      } else if (path.includes('/v0/0.3') || path.includes('/v0/0.3.html')) {
-        this.currentVersion = '0.3';
-      } else {
-        this.currentVersion = '0.4';
-      }
+      if      (path.includes('/v0/0.1')) this.currentVersion = '0.1';
+      else if (path.includes('/v0/0.2')) this.currentVersion = '0.2';
+      else if (path.includes('/v0/0.3')) this.currentVersion = '0.3';
+      else                               this.currentVersion = '0.4';
     },
     onVersionChange(e) {
-      const version = e.target.value;
-      if (version === this.currentVersion) return;
-      if (version === '0.1') {
-        window.location.href = '/static/v0/0.1.html';
-      } else if (version === '0.2') {
-        window.location.href = '/static/v0/0.2.html';
-      } else if (version === '0.3') {
-        window.location.href = '/static/v0/0.3.html';
-      } else {
-        window.location.href = '/static/v0/0.4.html';
-      }
+      const v = e.target.value;
+      if (v === this.currentVersion) return;
+      window.location.href = `/static/v0/${v}.html`;
     },
+
+    // ── Data I/O ─────────────────────────────────────────
     async loadInputs() {
-      try { this.inputs = await (await fetch(API+'/inputs')).json(); }
-      catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
+      try { this.inputs = await (await fetch(API + '/inputs')).json(); }
+      catch (e) { this.saveMsg = 'Load failed: ' + e.message; this.saveError = true; }
     },
     async refreshResults() {
-      try { this.results = await (await fetch(API+'/results')).json(); }
-      catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
+      try { this.results = await (await fetch(API + '/results')).json(); }
+      catch (e) { this.saveMsg = 'Load failed: ' + e.message; this.saveError = true; }
     },
-    userCount(ut) { return this.inputs?.user_types?.find(x=>x.name===ut)?.count??0; },
-    userTypeKey,
-    normalizeInputsBeforeSave() {
-      if (!this.inputs) return;
-      for (const u of this.inputs.user_types) {
-        u.count = coerceInt(u.count, 0);
-        u.is_child = coerceInt(u.is_child, 0);
-      }
-      const t = this.inputs.tank_environment;
-      if (t) {
-        t.fresh_capacity_gal = coerceFloat(t.fresh_capacity_gal, 100);
-        t.grey_capacity_gal = coerceFloat(t.grey_capacity_gal, 80);
-        t.black_capacity_gal = coerceFloat(t.black_capacity_gal, 40);
-        t.current_fresh_gal = coerceFloat(t.current_fresh_gal, 100);
-        t.current_grey_gal = coerceFloat(t.current_grey_gal, 0);
-        t.current_black_gal = coerceFloat(t.current_black_gal, 0);
-        t.climate_multiplier = coerceFloat(t.climate_multiplier, 1);
-        t.target_autonomy_days = coerceFloat(t.target_autonomy_days, 5);
-        t.drift = coerceFloat(t.drift, 0);
-        t.alert_threshold = coerceFloat(t.alert_threshold, 0.1);
-        t.greywater_recycle = t.greywater_recycle ? 1 : 0;
-      }
-      for (const b of this.inputs.behavior_multipliers) {
-        b.shower_mult = coerceFloat(b.shower_mult, 0);
-        b.sink_mult = coerceFloat(b.sink_mult, 0);
-        b.toilet_mult = coerceFloat(b.toilet_mult, 0);
-      }
-      for (const a of this.inputs.activities) {
-        a.flow_gal_per_min = coerceOptFloat(a.flow_gal_per_min);
-        a.duration_min = coerceOptFloat(a.duration_min);
-        a.events_per_day_per_person = coerceOptFloat(a.events_per_day_per_person);
-        a.gal_per_unit = coerceOptFloat(a.gal_per_unit);
-        a.grey_pct = coerceFloat(a.grey_pct, 0);
-        a.black_pct = coerceFloat(a.black_pct, 0);
-      }
-    },
-    async saveInputs() {
-      this.saving=true; this.saveMsg=''; this.saveError=false;
-      try {
-        this.normalizeInputsBeforeSave();
-        if (occupantFieldErrorSummary(this.inputs.user_types)) return;
-        if (occupantErrorSummary(this.inputs.user_types)) return;
-        if (tankLevelErrorSummary(this.inputs.tank_environment)) return;
-        const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
-        if (!r.ok) {
-          const text = await r.text();
-          throw new Error(parseSaveError(text, r.status));
-        }
-        this.saveMsg='Saved. Plan updated.';
-        await this.refreshResults();
-      } catch(e) { this.saveMsg='Save failed: '+e.message; this.saveError=true; }
-      finally { this.saving=false; }
-    },
-    onSeedInput(e) {
-      const v=e.target.value.trim();
-      this.inputs.tank_environment.drift_seed = v===''?null:parseInt(v,10);
-    },
-    onAlertThresholdInput(e) {
-      const v = parseFloat(e.target.value);
-      if (!Number.isNaN(v)) this.inputs.tank_environment.alert_threshold = Math.max(0, Math.min(1, v / 100));
-    },
-    statusClass(s) {
-      if (!s) return '';
-      if (s === '✓') return 'status-tick';
-      if (s.includes('Full Autonomy')) return 'status-ok';
-      if (s.includes('Low')||s.includes('Full')||s.includes('Good')||s.includes('Marginal')) return 'status-warn';
-      return 'status-bad';
-    },
-    waterCardStatus(tank) {
-      const limiting = this.results?.stability_score?.limiting_tank;
-      if (limiting === tank) return tank === 'Fresh' ? 'Low' : 'Getting full';
-      return 'Ok';
-    },
-    waterCardIcon(tank) {
-      const status = this.waterCardStatus(tank);
-      if (status === 'Ok') return '✓';
-      return '⚠';
-    },
-    waterCardTone(tank) {
-      return this.waterCardStatus(tank) === 'Ok' ? 'ok' : 'warn';
-    },
-    waterCardPlanFoot(tank) {
-      const limiting = this.results?.stability_score?.limiting_tank;
-      if (limiting !== tank) return 'Extra margin';
-      return tank === 'Fresh' ? 'Refill timing' : 'Dump timing';
-    },
-    waterCardPlanIcon(tank) {
-      const limiting = this.results?.stability_score?.limiting_tank;
-      if (limiting !== tank) return '○';
-      return '→';
-    },
-
-    // ── Heatmap ─────────────────────────────────────────────
-    norm(row, d) {
-      const v=row[`${this.streamKey}_${d}`]??0, {min,max}=this.heatRange;
-      return Math.max(0,Math.min(1,(v-min)/(max-min)));
-    },
-    cellStyle(row, d) {
-      const s = streamStyle(this.streamKey, this.lightMode);
-      const factor = row[`factor_${d}`];
-      let border = s.border;
-      if (factor != null && this.results?.drift > 0) {
-        const dev = Math.abs(factor - 1.0);
-        const alpha = Math.min(0.35 + dev/(this.results.drift+0.001)*0.65, 1).toFixed(2);
-        border = factor > 1.005
-          ? `1px solid rgba(251,191,36,${alpha})`
-          : factor < 0.995
-            ? `1px solid rgba(34,211,238,${alpha})`
-            : s.border;
-      }
-      return { background: s.bg, color: s.color, border };
-    },
-    cellVal(row, d) {
-      const v = row[`${this.streamKey}_${d}`];
-      return v != null ? v.toFixed(2) : '—';
-    },
-    cellTitle(row, d) {
-      const v=row[`${this.streamKey}_${d}`], f=row[`factor_${d}`];
-      return `${row.activity} · Day ${d} · ${this.heatStream}: ${v?.toFixed(3)} gal`+(f!=null?`  (×${f.toFixed(4)})`:'');
-    },
-
-    drawScale() { /* no gradient; uniform colours */ },
-
     async loadRealtime() {
       try {
         this.realtime = await (await fetch(API + '/realtime')).json();
         if (this.realtime?.days?.length && !this.realtimeDays.includes(this.realtimeDay)) {
           this.realtimeDay = this.realtime.days[0].day_num;
         }
-        nextTick(() => this.drawRealtimeScale());
       } catch (e) {
         this.saveMsg = 'Realtime load failed: ' + e.message;
         this.saveError = true;
       }
     },
-    dayAlert(dayNum) {
-      const d = this.realtime?.days?.find(x => x.day_num === dayNum);
-      return d?.alert === true;
-    },
-    realtimeHeatRangeForStream(streamKey) {
-      const ranges = this.realtime?.heat_ranges?.[streamKey];
-      return ranges ? { min: ranges.min, max: ranges.max } : { min: 0, max: 1 };
-    },
-    realtimeNormForStream(row, streamKey) {
-      const d = this.realtimeDay;
-      const v = row[streamKey + '_' + d] ?? 0;
-      const { min, max } = this.realtimeHeatRangeForStream(streamKey);
-      return Math.max(0, Math.min(1, (max > min ? (v - min) / (max - min) : 0)));
-    },
-    realtimeCellStyleForStream(row, streamKey) {
-      const s = streamStyle(streamKey, this.lightMode);
-      const factor = row['factor_' + this.realtimeDay];
-      let border = s.border;
-      if (factor != null && this.realtime?.baseline) {
-        const dev = Math.abs(factor - 1.0);
-        const alpha = Math.min(0.35 + dev * 0.65, 1).toFixed(2);
-        border = factor > 1.005
-          ? '1px solid rgba(251,191,36,' + alpha + ')'
-          : factor < 0.995
-            ? '1px solid rgba(34,211,238,' + alpha + ')'
-            : s.border;
-      }
-      return { background: s.bg, color: s.color, border };
-    },
-    realtimeCellValForStream(row, streamKey) {
-      const v = row[streamKey + '_' + this.realtimeDay];
-      return v != null ? v.toFixed(2) : '—';
-    },
-    realtimeCellTitleForStream(row, streamKey) {
-      const v = row[streamKey + '_' + this.realtimeDay];
-      const f = row['factor_' + this.realtimeDay];
-      const streamLabel = streamKey === 'back' ? 'Black' : (streamKey === 'fresh' ? 'Fresh' : 'Grey');
-      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + streamLabel + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
-    },
-    realtimeNorm(row) {
-      const d = this.realtimeDay;
-      const v = row[this.realtimeStreamKey + '_' + d] ?? 0;
-      const { min, max } = this.realtimeHeatRange;
-      return Math.max(0, Math.min(1, (v - min) / (max - min)));
-    },
-    realtimeCellStyle(row) {
-      const s = streamStyle(this.realtimeStreamKey, this.lightMode);
-      const factor = row['factor_' + this.realtimeDay];
-      let border = s.border;
-      if (factor != null && this.realtime?.baseline) {
-        const dev = Math.abs(factor - 1.0);
-        const alpha = Math.min(0.35 + dev * 0.65, 1).toFixed(2);
-        border = factor > 1.005
-          ? '1px solid rgba(251,191,36,' + alpha + ')'
-          : factor < 0.995
-            ? '1px solid rgba(34,211,238,' + alpha + ')'
-            : s.border;
-      }
-      return { background: s.bg, color: s.color, border };
-    },
-    realtimeCellVal(row) {
-      const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
-      return v != null ? v.toFixed(2) : '—';
-    },
-    realtimeCellTitle(row) {
-      const v = row[this.realtimeStreamKey + '_' + this.realtimeDay];
-      const f = row['factor_' + this.realtimeDay];
-      return row.activity + ' · Day ' + this.realtimeDay + ' · ' + this.realtimeHeatStream + ': ' + (v?.toFixed(3) ?? '—') + ' gal' + (f != null ? ' (×' + f.toFixed(4) + ')' : '');
-    },
-    drawRealtimeScale() { /* no gradient; uniform colours */ },
 
-    actionIcon(category) {
-      return {
-        gap_summary:       '!',
-        service_stop:      '×',
-        starting_state:    '↑',
-        feature_toggle:    '↻',
-        activity_reduction:'↓',
-      }[category] ?? '·';
+    userCount(ut) { return this.inputs?.user_types?.find(x => x.name === ut)?.count ?? 0; },
+    userTypeKey, // re-export helper to template
+
+    // Coerce any "" values back to numbers before sending to the API
+    normalizeInputsBeforeSave() {
+      if (!this.inputs) return;
+
+      for (const u of this.inputs.user_types) {
+        u.count = coerceInt(u.count, 0);
+        u.is_child = coerceInt(u.is_child, 0);
+      }
+
+      const t = this.inputs.tank_environment;
+      if (t) {
+        t.fresh_capacity_gal  = coerceFloat(t.fresh_capacity_gal, 100);
+        t.grey_capacity_gal   = coerceFloat(t.grey_capacity_gal, 80);
+        t.black_capacity_gal  = coerceFloat(t.black_capacity_gal, 40);
+        t.current_fresh_gal   = coerceFloat(t.current_fresh_gal, 100);
+        t.current_grey_gal    = coerceFloat(t.current_grey_gal, 0);
+        t.current_black_gal   = coerceFloat(t.current_black_gal, 0);
+        t.climate_multiplier  = coerceFloat(t.climate_multiplier, 1);
+        t.target_autonomy_days= coerceFloat(t.target_autonomy_days, 5);
+        t.drift               = coerceFloat(t.drift, 0);
+        t.alert_threshold     = coerceFloat(t.alert_threshold, 0.1);
+        t.greywater_recycle   = t.greywater_recycle ? 1 : 0;
+      }
+
+      for (const b of this.inputs.behavior_multipliers) {
+        b.shower_mult = coerceFloat(b.shower_mult, 0);
+        b.sink_mult   = coerceFloat(b.sink_mult, 0);
+        b.toilet_mult = coerceFloat(b.toilet_mult, 0);
+      }
+
+      for (const a of this.inputs.activities) {
+        a.flow_gal_per_min          = coerceOptFloat(a.flow_gal_per_min);
+        a.duration_min              = coerceOptFloat(a.duration_min);
+        a.events_per_day_per_person = coerceOptFloat(a.events_per_day_per_person);
+        a.gal_per_unit              = coerceOptFloat(a.gal_per_unit);
+        a.grey_pct  = coerceFloat(a.grey_pct,  0);
+        a.black_pct = coerceFloat(a.black_pct, 0);
+      }
     },
+
+    async saveInputs() {
+      // Button is disabled when hasInputErrors, but guard anyway
+      if (this.hasInputErrors) return;
+      this.saving = true; this.saveMsg = ''; this.saveError = false;
+      try {
+        this.normalizeInputsBeforeSave();
+        const r = await fetch(API + '/inputs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_types: this.inputs.user_types,
+            tank_environment: this.inputs.tank_environment,
+            behavior_multipliers: this.inputs.behavior_multipliers,
+            activities: this.inputs.activities,
+          }),
+        });
+        if (!r.ok) throw new Error(parseSaveError(await r.text(), r.status));
+        this.saveMsg = 'Saved. Plan updated.';
+        await this.refreshResults();
+      } catch (e) {
+        this.saveMsg = 'Save failed: ' + e.message;
+        this.saveError = true;
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    onSeedInput(e) {
+      const v = e.target.value.trim();
+      this.inputs.tank_environment.drift_seed = v === '' ? null : parseInt(v, 10);
+    },
+    onAlertThresholdInput(e) {
+      const v = parseFloat(e.target.value);
+      if (!Number.isNaN(v)) {
+        this.inputs.tank_environment.alert_threshold = Math.max(0, Math.min(1, v / 100));
+      }
+    },
+
+    // ── Tank-status helpers (Plan card chrome) ───────────
+    statusClass(s) {
+      if (!s) return '';
+      if (s === '✓') return 'status-tick';
+      if (s.includes('Full Autonomy')) return 'status-ok';
+      if (s.includes('Low') || s.includes('Full') || s.includes('Good') || s.includes('Marginal')) return 'status-warn';
+      return 'status-bad';
+    },
+    isLimitingTank(tank) { return this.results?.stability_score?.limiting_tank === tank; },
+    tankDays(tank) {
+      const key = tank.toLowerCase() + '_days';
+      return this.results?.stability_score?.[key];
+    },
+    waterCardTone(tank)     { return this.isLimitingTank(tank) ? 'warn'         : 'ok'; },
+    waterCardPlanIcon(tank) { return this.isLimitingTank(tank) ? '→'            : '○'; },
+    waterCardPlanFoot(tank) {
+      if (!this.isLimitingTank(tank)) return 'Extra margin';
+      return tank === 'Fresh' ? 'Refill timing' : 'Dump timing';
+    },
+
+    // ── Heatmap cell rendering — Plan tab ────────────────
+    cellStyle(row, d) {
+      const drift = this.results?.drift ?? 0;
+      return buildHeatCellStyle(
+        this.streamKey,
+        this.lightMode,
+        row[`factor_${d}`],
+        drift > 0 ? (dev) => 0.35 + dev / (drift + 0.001) * 0.65 : null
+      );
+    },
+    cellVal(row, d) {
+      const v = row[`${this.streamKey}_${d}`];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    cellTitle(row, d) {
+      return buildHeatCellTitle(row.activity, d, this.streamKey, row[`${this.streamKey}_${d}`], row[`factor_${d}`]);
+    },
+
+    // ── Heatmap cell rendering — Realtime tab (per-stream) ──
+    realtimeCellStyle(row, streamKey) {
+      const hasBaseline = !!this.realtime?.baseline;
+      return buildHeatCellStyle(
+        streamKey,
+        this.lightMode,
+        row['factor_' + this.realtimeDay],
+        hasBaseline ? (dev) => 0.35 + dev * 0.65 : null
+      );
+    },
+    realtimeCellVal(row, streamKey) {
+      const v = row[`${streamKey}_${this.realtimeDay}`];
+      return v != null ? v.toFixed(2) : '—';
+    },
+    realtimeCellTitle(row, streamKey) {
+      return buildHeatCellTitle(
+        row.activity,
+        this.realtimeDay,
+        streamKey,
+        row[`${streamKey}_${this.realtimeDay}`],
+        row['factor_' + this.realtimeDay],
+      );
+    },
+
+    // ── Realtime misc ────────────────────────────────────
+    dayAlert(dayNum) {
+      return this.realtime?.days?.find(x => x.day_num === dayNum)?.alert === true;
+    },
+
+    // ── Recommended actions ──────────────────────────────
+    actionIcon(category) { return ACTION_ICONS[category] ?? '·'; },
     formatRecommendedActionText(text) {
       if (!text) return text;
-      return text.replace(/\b(fresh|grey|black)\s+tank(s)?\b/gi, (match, stream, plural = '') => {
-        return `${stream} water tank${plural}`;
-      });
+      return text.replace(/\b(fresh|grey|black)\s+tank(s)?\b/gi,
+        (_, stream, plural = '') => `${stream} water tank${plural}`);
     },
   },
 }).mount('#app');
