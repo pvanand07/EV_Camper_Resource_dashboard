@@ -933,7 +933,7 @@
       </template>
     </div>
     <div class="save-bar">
-      <button class="btn btn-secondary" @click="loadRealtime">Refresh Realtime</button>
+      <button class="btn btn-secondary" @click="loadRealtime(true)" :disabled="saving">Refresh Realtime</button>
     </div>
   </div>
 </div>
@@ -1292,7 +1292,15 @@ createApp({
         return;
       }
       await this.saveInputs('Plan refreshed.');
-      if (!this.saveError && this.realtime) await this.loadRealtime();
+      if (!this.saveError && this.realtime) {
+        try {
+          await this.fetchRealtime();
+          nextTick(() => this.drawRealtimeScale());
+        } catch (e) {
+          this.saveMsg = 'Realtime load failed: ' + e.message;
+          this.saveError = true;
+        }
+      }
     },
     onSeedInput(e) {
       const v=e.target.value.trim();
@@ -1371,13 +1379,25 @@ createApp({
 
     drawScale() { /* no gradient; uniform colours */ },
 
-    async loadRealtime() {
-      try {
-        this.realtime = await (await fetch(API + '/realtime')).json();
-        if (this.realtime?.days?.length && !this.realtimeDays.includes(this.realtimeDay)) {
-          this.realtimeDay = this.realtime.days[0].day_num;
+    async fetchRealtime() {
+      this.realtime = await (await fetch(API + '/realtime')).json();
+      if (this.realtime?.days?.length && !this.realtimeDays.includes(this.realtimeDay)) {
+        this.realtimeDay = this.realtime.days[0].day_num;
+      }
+      nextTick(() => this.drawRealtimeScale());
+    },
+    async loadRealtime(recompute = false) {
+      if (recompute) {
+        if (this.hasTankLevelErrors) {
+          this.saveMsg = 'Fix input errors before refreshing realtime.';
+          this.saveError = true;
+          return;
         }
-        nextTick(() => this.drawRealtimeScale());
+        await this.saveInputs('Realtime refreshed.');
+        if (this.saveError) return;
+      }
+      try {
+        await this.fetchRealtime();
       } catch (e) {
         this.saveMsg = 'Realtime load failed: ' + e.message;
         this.saveError = true;
