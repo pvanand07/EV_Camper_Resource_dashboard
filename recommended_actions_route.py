@@ -59,6 +59,14 @@ def _activity_stream_key(tank: str) -> str:
     }[tank]
 
 
+def _activity_stream_total(activity_results: list[dict], tank: str) -> float:
+    stream_key = _activity_stream_key(tank)
+    return sum(
+        max(0.0, float(row.get(stream_key) or 0.0))
+        for row in activity_results
+    )
+
+
 def _service_day(days_available: float, target_days: int) -> int:
     if target_days <= 0:
         return 1
@@ -155,10 +163,13 @@ def build_recommended_actions(
     if limiting_load <= 0 or target_days <= 0:
         return []
 
+    activity_daily_load = _activity_stream_total(activity_results, limiting_tank)
+    daily_load = max(limiting_load, activity_daily_load)
+
     gap_days                  = max(0.0, target_days - limiting_days)
-    required_daily_reduction  = max(0.0, limiting_load - (available_gallons / target_days))
-    required_reduction_pct    = (required_daily_reduction / limiting_load * 100.0) if limiting_load > 0 else 0.0
-    extra_capacity_needed     = max(0.0, target_days * limiting_load - available_gallons)
+    required_daily_reduction  = max(0.0, daily_load - (available_gallons / target_days))
+    required_reduction_pct    = (required_daily_reduction / daily_load * 100.0) if daily_load > 0 else 0.0
+    extra_capacity_needed     = gap_days * daily_load
     actions: list[dict]       = []
 
     def add_action(
@@ -317,17 +328,18 @@ def build_recommended_actions(
 
     # ── Activity-reduction actions for top-2 contributors to limiting stream
     stream_key   = _activity_stream_key(limiting_tank)
+    stream_total = _activity_stream_total(activity_results, limiting_tank)
     contributors = sorted(
         (
             {
                 "activity_name":   row["activity_name"],
-                "stream_load":     float(row.get(stream_key) or 0.0),
+                "stream_load":     stream_load,
                 "stream_share_pct": (
-                    float(row.get(stream_key) or 0.0) / limiting_load * 100.0
-                ) if limiting_load > 0 else 0.0,
+                    stream_load / stream_total * 100.0
+                ) if stream_total > 0 else 0.0,
             }
             for row in activity_results
-            if float(row.get(stream_key) or 0.0) > 0
+            if (stream_load := max(0.0, float(row.get(stream_key) or 0.0))) > 0
         ),
         key=lambda row: row["stream_load"],
         reverse=True,
@@ -355,7 +367,8 @@ def build_recommended_actions(
             activity_name=contributor["activity_name"],
             title=title,
             summary=(
-                f"{contributor['activity_name']} is {contributor['stream_share_pct']:.0f}% of the load. "
+                f"{contributor['activity_name']} is "
+                f"{min(100, max(0, contributor['stream_share_pct'])):.0f}% of the load. "
                 f"Cut {cut_pct}% -> -{saved_gallons:.1f} gal/day, +{gain_days:.2f} days."
             ),
             estimated_days_gain=gain_days,

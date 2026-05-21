@@ -331,6 +331,38 @@ def _drift_multiplier(drift: float, rng: random.Random) -> float:
     return max(lo, min(hi, rng.gauss(1.0, std)))
 
 
+def _make_drift_rng(drift_seed, name: str, day: int) -> random.Random:
+    if drift_seed is not None:
+        return random.Random(hash((int(drift_seed), name, day)))
+    return random.Random()
+
+
+def _store_daily_usage_by_day(
+    cur: sqlite3.Cursor,
+    target_days_int: int,
+    drift: float,
+    drift_seed,
+    computed: list[tuple],
+) -> None:
+    cur.execute("DELETE FROM daily_usage_by_day")
+    for name, fresh, grey_pct, black_pct in computed:
+        for day in range(1, target_days_int + 1):
+            factor = _drift_multiplier(drift, _make_drift_rng(drift_seed, name, day))
+            drifted_fresh = fresh * factor
+            cur.execute("""
+                INSERT INTO daily_usage_by_day
+                  (activity_name, day_num, fresh_gal, grey_gal, black_gal, drift_factor)
+                VALUES (?,?,?,?,?,?)
+            """, (
+                name,
+                day,
+                round(drifted_fresh, 4),
+                round(drifted_fresh * grey_pct, 4),
+                round(drifted_fresh * black_pct, 4),
+                round(factor, 4),
+            ))
+
+
 # ── Core compute ──────────────────────────────────────────────────────────────
 
 def compute_and_store(conn: sqlite3.Connection):
@@ -362,12 +394,6 @@ def compute_and_store(conn: sqlite3.Connection):
     (fresh_cap, grey_cap, black_cap,
      cur_fresh, cur_grey, cur_black,
      climate_mult, target_days, drift, drift_seed, greywater_recycle) = row
-
-    # Per-cell RNG factory
-    def make_rng(name: str, day: int) -> random.Random:
-        if drift_seed is not None:
-            return random.Random(hash((int(drift_seed), name, day)))
-        return random.Random()
 
     # ── Section 3: Effective multipliers via SUMPRODUCT
     cur.execute("SELECT user_type, shower_mult, sink_mult, toilet_mult FROM behavior_multiplier")
@@ -412,14 +438,15 @@ def compute_and_store(conn: sqlite3.Connection):
 
     # ── Greywater recycling: steady-state daily savings
     toilet_fresh_baseline = next((c[1] for c in computed if c[0] == "Toilet"), 0.0)
-    grey_recycled_per_day = min(toilet_fresh_baseline, total_grey) if greywater_recycle else 0.0
+    recycle_active = bool(greywater_recycle) and grey_cap > 0
+    grey_recycled_per_day = min(toilet_fresh_baseline, total_grey) if recycle_active else 0.0
     total_fresh_eff = total_fresh - grey_recycled_per_day
     total_grey_eff  = total_grey  - grey_recycled_per_day
 
     # ── Store activity_result
     cur.execute("DELETE FROM activity_result")
     for name, fresh, grey_pct, black_pct in computed:
-        if greywater_recycle and name == "Toilet":
+        if recycle_active and name == "Toilet":
             eff_fresh   = max(0.0, fresh - grey_recycled_per_day)
             grey_added  = eff_fresh * grey_pct
             black_added = fresh * black_pct
@@ -440,25 +467,8 @@ def compute_and_store(conn: sqlite3.Connection):
               round(attrib, 2)))
 
     # ── Store daily_usage_by_day with per-day drift
-    cur.execute("DELETE FROM daily_usage_by_day")
     target_days_int = max(1, int(target_days))
-
-    for name, fresh, grey_pct, black_pct in computed:
-        for day in range(1, target_days_int + 1):
-            factor = _drift_multiplier(drift, make_rng(name, day))
-            drifted_fresh = fresh * factor
-            cur.execute("""
-                INSERT INTO daily_usage_by_day
-                  (activity_name, day_num, fresh_gal, grey_gal, black_gal, drift_factor)
-                VALUES (?,?,?,?,?,?)
-            """, (
-                name,
-                day,
-                round(drifted_fresh, 4),
-                round(drifted_fresh * grey_pct, 4),
-                round(drifted_fresh * black_pct, 4),
-                round(factor, 4),
-            ))
+    _store_daily_usage_by_day(cur, target_days_int, drift, drift_seed, computed)
 
     # ── Section 5: Tank projections
     def safe_days(numerator, rate):

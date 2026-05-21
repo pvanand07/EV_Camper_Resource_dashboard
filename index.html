@@ -54,6 +54,7 @@
     .form-row input { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; padding: 0.5rem 0.65rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); }
     .form-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.2); }
     .form-row input[readonly] { opacity: 0.7; cursor: default; }
+    .field-error { font-size: 0.78rem; color: var(--danger); line-height: 1.3; }
 
     /* Drift */
     .drift-row { grid-column: 1/-1; background: #0d1b26; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
@@ -258,7 +259,11 @@
         <div class="form-row"><label>Current Black Level (gal)</label><input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" /></div>
         <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
         <div class="form-row"><label>Target Autonomy Days</label><input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" /></div>
-        <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
+        <div class="form-row">
+          <label>Alert threshold (%)</label>
+          <input type="number" min="1" max="99" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %. 100% means 2× baseline; max setting is 99%." />
+          <span class="field-error" v-if="alertThresholdMsg">{{ alertThresholdMsg }}</span>
+        </div>
         <div class="drift-row">
           <div class="drift-top">
             <div>
@@ -606,6 +611,21 @@ function coerceOptFloat(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseSaveError(text, status) {
+  try {
+    const body = JSON.parse(text);
+    if (Array.isArray(body.detail)) {
+      const msgs = body.detail
+        .map(d => (d.msg || '').replace(/^Value error,\s*/i, ''))
+        .filter(Boolean);
+      if (msgs.length) return msgs.join(' ');
+    }
+  } catch (_) {}
+  return status === 422
+    ? 'Invalid input. Please check your tank levels and try again.'
+    : `Server error (${status}).`;
+}
+
 createApp({
   data() {
     return {
@@ -615,6 +635,7 @@ createApp({
       saving: false,
       saveMsg: '',
       saveError: false,
+      alertThresholdMsg: '',
       heatStream: 'fresh',
       realtime: null,
       realtimeDay: 1,
@@ -733,7 +754,7 @@ createApp({
         t.climate_multiplier = coerceFloat(t.climate_multiplier, 1);
         t.target_autonomy_days = coerceFloat(t.target_autonomy_days, 5);
         t.drift = coerceFloat(t.drift, 0);
-        t.alert_threshold = coerceFloat(t.alert_threshold, 0.1);
+        t.alert_threshold = Math.max(0.01, Math.min(0.99, coerceFloat(t.alert_threshold, 0.1)));
         t.greywater_recycle = t.greywater_recycle ? 1 : 0;
       }
       for (const b of this.inputs.behavior_multipliers) {
@@ -755,7 +776,7 @@ createApp({
       try {
         this.normalizeInputsBeforeSave();
         const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
-        if (!r.ok) throw new Error(await r.text());
+        if (!r.ok) throw new Error(parseSaveError(await r.text(), r.status));
         this.saveMsg='Saved. Results updated.';
         await this.refreshResults();
       } catch(e) { this.saveMsg='Save failed: '+e.message; this.saveError=true; }
@@ -767,7 +788,14 @@ createApp({
     },
     onAlertThresholdInput(e) {
       const v = parseFloat(e.target.value);
-      if (!Number.isNaN(v)) this.inputs.tank_environment.alert_threshold = Math.max(0, Math.min(1, v / 100));
+      if (Number.isNaN(v)) return;
+      if (v < 1) {
+        this.alertThresholdMsg = 'Minimum alert threshold is 1%.';
+        this.inputs.tank_environment.alert_threshold = 0.01;
+        return;
+      }
+      this.alertThresholdMsg = '';
+      this.inputs.tank_environment.alert_threshold = Math.max(0.01, Math.min(0.99, v / 100));
     },
     statusClass(s) {
       if (!s) return '';

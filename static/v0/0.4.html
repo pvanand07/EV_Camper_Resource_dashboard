@@ -208,6 +208,7 @@
     .water-card-foot { margin-top: 0.85rem; font-size: 0.9rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
     .water-card-foot.warn { color: var(--warning); }
     .water-card-foot.ok { color: rgba(226,232,240,0.8); }
+    .water-card-foot.bad { color: var(--danger); }
     .water-status-note { margin-top: 0.9rem; font-size: 0.95rem; color: var(--text-muted); text-align: center; }
     .water-status-note strong { color: #f8fafc; font-weight: 600; }
     .water-status-note.supported strong { color: #f8fafc; }
@@ -216,9 +217,6 @@
     /* Stability status card — same column layout as tank cards (header / value / foot) */
     .water-support-status-card {
       min-height: 142px;
-    }
-    .water-support-status-foot {
-      visibility: hidden;
     }
     .support-status-label {
       font-size: 1.2rem;
@@ -558,7 +556,11 @@
           <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
           <span class="field-error" v-if="tankErrors.target_autonomy">{{ tankErrors.target_autonomy }}</span>
         </div>
-        <div class="form-row"><label>Alert threshold (%)</label><input type="number" min="0" max="100" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %" /></div>
+        <div class="form-row">
+          <label>Alert threshold (%)</label>
+          <input type="number" min="1" max="99" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %. 100% means 2× baseline; max setting is 99%." />
+          <span class="field-error" v-if="alertThresholdMsg">{{ alertThresholdMsg }}</span>
+        </div>
         <div class="drift-row">
           <div class="drift-top">
             <div>
@@ -672,8 +674,8 @@
           </div>
           <div>
             <div class="support-status-label">{{ planOutlookHeadline }}</div>
-            <div class="water-card-foot water-support-status-foot">
-              <span>✓</span><span>Ok</span>
+            <div class="water-card-foot water-support-status-foot" :class="supportStatusFootTone">
+              <span>{{ supportStatusFootIcon }}</span><span>{{ supportStatusFootLabel }}</span>
             </div>
           </div>
         </div>
@@ -702,7 +704,7 @@
       </div>
       <div v-else-if="results?.stay_supported === false" class="water-status-note plan-note plan-note-gap">
         <span class="plan-note-label">Timeline check</span>
-        <strong>{{ results.stability_score.limiting_days?.toFixed(2) }} d</strong> of headroom vs. a <strong>{{ results.stability_score.target_days }}-day</strong> target — {{ results.stability_score.limiting_tank }} tank is the constraint.
+        <strong>{{ results.stability_score.limiting_days?.toFixed(2) }} d</strong> of runway vs. a <strong>{{ results.stability_score.target_days }}-day</strong> target (<strong>{{ targetDaysGap.toFixed(2) }} d</strong> short) — {{ results.stability_score.limiting_tank }} tank is the constraint.
       </div>
       <div
         v-if="results?.stay_supported === false && results?.recommended_actions?.length"
@@ -829,7 +831,8 @@
     </div>
 
     <div class="save-bar">
-      <button class="btn btn-secondary" @click="refreshResults">Refresh plan</button>
+      <button class="btn btn-secondary" @click="refreshPlan" :disabled="saving">Refresh plan</button>
+      <span class="msg" :class="{ err: saveError }" v-if="saveMsg">{{ saveMsg }}</span>
     </div>
   </div>
 
@@ -866,7 +869,7 @@
           <div class="realtime-stat"><span class="label">Fresh</span><span class="value">{{ currentDayData.tank_levels.fresh_gal?.toFixed(1) }} / {{ realtime.tank_capacities.fresh_gal }} gal</span></div>
           <div class="realtime-stat"><span class="label">Grey</span><span class="value">{{ currentDayData.tank_levels.grey_gal?.toFixed(1) }} / {{ realtime.tank_capacities.grey_gal }} gal</span></div>
           <div class="realtime-stat"><span class="label">Black</span><span class="value">{{ currentDayData.tank_levels.black_gal?.toFixed(1) }} / {{ realtime.tank_capacities.black_gal }} gal</span></div>
-          <div class="realtime-stat" v-if="realtime.greywater_recycle && realtimeDay > 1 && currentDayData.grey_recycled_gal > 0" style="border-color:rgba(52,211,153,0.35);">
+          <div class="realtime-stat" v-if="realtime.greywater_recycle && currentDayData.grey_recycled_gal > 0" style="border-color:rgba(52,211,153,0.35);">
             <span class="label" style="color:#34d399;">♻ Recycled</span>
             <span class="value" style="color:#34d399;">{{ currentDayData.grey_recycled_gal?.toFixed(2) }} gal → toilet</span>
           </div>
@@ -1082,6 +1085,7 @@ createApp({
       saving: false,
       saveMsg: '',
       saveError: false,
+      alertThresholdMsg: '',
       heatStream: 'fresh',
       realtime: null,
       realtimeDay: 1,
@@ -1141,6 +1145,29 @@ createApp({
       if (pct >= 80) return 'tone-on-track';
       if (pct >= 50) return 'tone-needs-attention';
       return 'tone-not-supported';
+    },
+    supportStatusFootIcon() {
+      const h = this.planOutlookHeadline;
+      if (h === 'On track') return '✓';
+      if (h === 'Needs attention') return '⚠';
+      return '✗';
+    },
+    supportStatusFootLabel() {
+      const h = this.planOutlookHeadline;
+      if (h === 'On track') return 'Ok';
+      if (h === 'Needs attention') return 'Attention';
+      return 'Not ok';
+    },
+    supportStatusFootTone() {
+      const h = this.planOutlookHeadline;
+      if (h === 'On track') return 'ok';
+      if (h === 'Needs attention') return 'warn';
+      return 'bad';
+    },
+    targetDaysGap() {
+      const ss = this.results?.stability_score;
+      if (!ss) return 0;
+      return Math.max(0, (ss.target_days ?? 0) - (ss.limiting_days ?? 0));
     },
 
     // ── Heatmap (Plan) ───────────────────────────────────
@@ -1234,7 +1261,7 @@ createApp({
         t.climate_multiplier  = coerceFloat(t.climate_multiplier, 1);
         t.target_autonomy_days= coerceFloat(t.target_autonomy_days, 5);
         t.drift               = coerceFloat(t.drift, 0);
-        t.alert_threshold     = coerceFloat(t.alert_threshold, 0.1);
+        t.alert_threshold     = Math.max(0.01, Math.min(0.99, coerceFloat(t.alert_threshold, 0.1)));
         t.greywater_recycle   = t.greywater_recycle ? 1 : 0;
       }
 
@@ -1254,7 +1281,7 @@ createApp({
       }
     },
 
-    async saveInputs() {
+    async saveInputs(successMsg = 'Saved. Plan updated.') {
       // Button is disabled when hasInputErrors, but guard anyway
       if (this.hasInputErrors) return;
       this.saving = true; this.saveMsg = ''; this.saveError = false;
@@ -1271,7 +1298,7 @@ createApp({
           }),
         });
         if (!r.ok) throw new Error(parseSaveError(await r.text(), r.status));
-        this.saveMsg = 'Saved. Plan updated.';
+        this.saveMsg = successMsg;
         await this.refreshResults();
       } catch (e) {
         this.saveMsg = 'Save failed: ' + e.message;
@@ -1280,6 +1307,15 @@ createApp({
         this.saving = false;
       }
     },
+    async refreshPlan() {
+      if (this.hasInputErrors) {
+        this.saveMsg = 'Fix input errors before refreshing the plan.';
+        this.saveError = true;
+        return;
+      }
+      await this.saveInputs('Plan refreshed.');
+      if (!this.saveError && this.realtime) await this.loadRealtime();
+    },
 
     onSeedInput(e) {
       const v = e.target.value.trim();
@@ -1287,9 +1323,14 @@ createApp({
     },
     onAlertThresholdInput(e) {
       const v = parseFloat(e.target.value);
-      if (!Number.isNaN(v)) {
-        this.inputs.tank_environment.alert_threshold = Math.max(0, Math.min(1, v / 100));
+      if (Number.isNaN(v)) return;
+      if (v < 1) {
+        this.alertThresholdMsg = 'Minimum alert threshold is 1%.';
+        this.inputs.tank_environment.alert_threshold = 0.01;
+        return;
       }
+      this.alertThresholdMsg = '';
+      this.inputs.tank_environment.alert_threshold = Math.max(0.01, Math.min(0.99, v / 100));
     },
 
     // ── Tank-status helpers (Plan card chrome) ───────────

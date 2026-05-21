@@ -157,13 +157,23 @@ class TankEnvironmentUpdate(BaseModel):
 
     @field_validator(
         "current_fresh_gal", "current_grey_gal", "current_black_gal",
-        "alert_threshold",
         mode="before",
     )
     @classmethod
     def must_be_non_negative(cls, v):
         if v is not None and float(v) < 0:
             raise ValueError("value must be >= 0")
+        return v
+
+    @field_validator("alert_threshold", mode="before")
+    @classmethod
+    def alert_threshold_in_range(cls, v):
+        if v is not None:
+            f = float(v)
+            if f <= 0:
+                raise ValueError("Alert threshold must be at least 1%")
+            if f > 0.99:
+                raise ValueError("Alert threshold cannot exceed 99%")
         return v
 
     @field_validator("target_autonomy_days", mode="before")
@@ -643,21 +653,22 @@ def get_realtime():
 
         threshold        = 1.0 + alert_threshold_frac
         days             = []
-        prev_day_grey_total = 0.0
 
         for day_num in range(1, target_days + 1):
             totals     = _realtime_day_totals(raw_rows, day_num)
             activities = _realtime_day_activities(raw_rows, day_num)
 
             grey_recycled = 0.0
-            if greywater_recycle and day_num > 1:
+            if greywater_recycle and grey_cap > 0:
                 toilet_fresh_today = toilet_fresh_by_day.get(day_num, 0.0)
-                grey_recycled = min(toilet_fresh_today, prev_day_grey_total)
+                grey_available = running_grey
+                grey_recycled = min(toilet_fresh_today, grey_available)
+
+            black_overflow = round(max(0.0, running_black + totals["black_gal"] - black_cap), 2)
 
             running_fresh = _cap_fresh(running_fresh - totals["fresh_gal"] + grey_recycled)
             running_grey  = _cap_grey(running_grey   + totals["grey_gal"]  - grey_recycled)
             running_black = _cap_black(running_black  + totals["black_gal"])
-            prev_day_grey_total = totals["grey_gal"]
 
             tank_levels = {
                 "fresh_gal": running_fresh,
@@ -669,7 +680,9 @@ def get_realtime():
             baseline_fresh_gross  = _realtime_gross_fresh_baseline(baseline, toilet_eff_fresh, toilet_gross_day)
             alert_fresh = baseline_fresh_gross > 0 and totals["fresh_gal"] > baseline_fresh_gross * threshold
             alert_grey  = baseline["grey_gal"]  > 0 and totals["grey_gal"]  > baseline["grey_gal"]  * threshold
-            alert_black = baseline["black_gal"] > 0 and totals["black_gal"] > baseline["black_gal"] * threshold
+            alert_black_spike = baseline["black_gal"] > 0 and totals["black_gal"] > baseline["black_gal"] * threshold
+            alert_black_overflow = black_overflow > 0
+            alert_black = alert_black_spike or alert_black_overflow
             alert       = alert_fresh or alert_grey or alert_black
 
             def _pct_above(baseline_gal, actual_gal):
@@ -684,7 +697,12 @@ def get_realtime():
             if alert_grey:
                 pct = _pct_above(baseline["grey_gal"], totals["grey_gal"])
                 alerts_list.append({"stream": "grey",  "message": f"Grey water usage is {pct}% more than usual"})
-            if alert_black:
+            if alert_black_overflow:
+                alerts_list.append({
+                    "stream": "black",
+                    "message": f"Black tank is full — {black_overflow:.2f} gal/day overflow",
+                })
+            if alert_black_spike:
                 pct = _pct_above(baseline["black_gal"], totals["black_gal"])
                 alerts_list.append({"stream": "black", "message": f"Black water usage is {pct}% more than usual"})
 
@@ -700,6 +718,7 @@ def get_realtime():
                 "alert_black":       alert_black,
                 "alerts":            alerts_list,
                 "grey_recycled_gal": round(grey_recycled, 2),
+                "black_overflow_gal": black_overflow,
             })
 
     return {
