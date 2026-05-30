@@ -80,6 +80,7 @@
     .seed-input-wrap { display: flex; align-items: center; gap: 0.5rem; }
     .seed-input { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; padding: 0.38rem 0.6rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); width: 120px; }
     .seed-input:focus { outline: none; border-color: var(--accent); }
+    .seed-input-wrap.invalid .seed-input { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.15); }
     .seed-clear { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0.28rem 0.5rem; transition: all 0.15s; }
     .seed-clear:hover { border-color: var(--danger); color: var(--danger); }
     .seed-status { font-size: 0.78rem; color: var(--warning); font-family: 'JetBrains Mono', monospace; }
@@ -91,6 +92,9 @@
     th { color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
     td input, td select { width: 100%; max-width: 90px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.35rem 0.5rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
     td input:focus, td select:focus { outline: none; border-color: var(--accent); }
+    td.cell-invalid input { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.15); }
+    td.cell-invalid input:focus { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.25); }
+    td .field-error { display: block; margin-top: 0.25rem; font-size: 0.72rem; max-width: 120px; }
 
     /* Buttons */
     .btn { font-family: 'Outfit', sans-serif; font-weight: 500; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; }
@@ -522,32 +526,32 @@
       <div class="form-grid">
         <div class="form-row" :class="{ invalid: tankErrors.fresh_capacity }">
           <label>Fresh Tank Capacity (gal)</label>
-          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.fresh_capacity_gal" />
+          <input type="number" step="0.1" :value="inputs.tank_environment.fresh_capacity_gal" @input="onTankEnvInput($event, 'fresh_capacity_gal')" />
           <span class="field-error" v-if="tankErrors.fresh_capacity">{{ tankErrors.fresh_capacity }}</span>
         </div>
         <div class="form-row" :class="{ invalid: tankErrors.grey_capacity }">
           <label>Grey Tank Capacity (gal)</label>
-          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.grey_capacity_gal" />
+          <input type="number" step="0.1" :value="inputs.tank_environment.grey_capacity_gal" @input="onTankEnvInput($event, 'grey_capacity_gal')" />
           <span class="field-error" v-if="tankErrors.grey_capacity">{{ tankErrors.grey_capacity }}</span>
         </div>
         <div class="form-row" :class="{ invalid: tankErrors.black_capacity }">
           <label>Black Tank Capacity (gal)</label>
-          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.black_capacity_gal" />
+          <input type="number" step="0.1" :value="inputs.tank_environment.black_capacity_gal" @input="onTankEnvInput($event, 'black_capacity_gal')" />
           <span class="field-error" v-if="tankErrors.black_capacity">{{ tankErrors.black_capacity }}</span>
         </div>
         <div class="form-row" :class="{ invalid: tankErrors.fresh }">
           <label>Current Fresh Tank Level (gal)</label>
-          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_fresh_gal" />
+          <input type="number" step="0.1" :value="inputs.tank_environment.current_fresh_gal" @input="onTankEnvInput($event, 'current_fresh_gal')" />
           <span class="field-error" v-if="tankErrors.fresh">{{ tankErrors.fresh }}</span>
         </div>
         <div class="form-row" :class="{ invalid: tankErrors.grey }">
           <label>Current Grey Tank Level (gal)</label>
-          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_grey_gal" />
+          <input type="number" step="0.1" :value="inputs.tank_environment.current_grey_gal" @input="onTankEnvInput($event, 'current_grey_gal')" />
           <span class="field-error" v-if="tankErrors.grey">{{ tankErrors.grey }}</span>
         </div>
         <div class="form-row" :class="{ invalid: tankErrors.black }">
           <label>Current Black Tank Level (gal)</label>
-          <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
+          <input type="number" step="0.1" :value="inputs.tank_environment.current_black_gal" @input="onTankEnvInput($event, 'current_black_gal')" />
           <span class="field-error" v-if="tankErrors.black">{{ tankErrors.black }}</span>
         </div>
         <div class="form-row" :class="{ invalid: tankErrors.climate_multiplier }">
@@ -560,10 +564,10 @@
           <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
           <span class="field-error" v-if="tankErrors.target_autonomy">{{ tankErrors.target_autonomy }}</span>
         </div>
-        <div class="form-row">
+        <div class="form-row" :class="{ invalid: tankErrors.alert_threshold }">
           <label>Alert threshold (%)</label>
           <input type="number" min="1" max="99" step="1" :value="alertThresholdPct" @input="onAlertThresholdInput($event)" title="Alert when daily usage exceeds baseline by this %. 100% means 2× baseline; max setting is 99%." />
-          <span class="field-error" v-if="alertThresholdMsg">{{ alertThresholdMsg }}</span>
+          <span class="field-error" v-if="tankErrors.alert_threshold">{{ tankErrors.alert_threshold }}</span>
         </div>
         <div class="drift-row">
           <div class="drift-top">
@@ -584,12 +588,13 @@
           <div class="drift-band-label" v-else style="color:#475569;">Drift = 0 — all days use exact baseline (deterministic)</div>
           <div class="seed-row" v-if="inputs.tank_environment.drift > 0">
             <label class="seed-label">Random Seed <span class="seed-hint">integer = locked &amp; reproducible &nbsp;|&nbsp; blank = fresh random each run</span></label>
-            <div class="seed-input-wrap">
+            <div class="seed-input-wrap" :class="{ invalid: tankErrors.drift_seed }">
               <input type="number" step="1" min="0" class="seed-input" :value="inputs.tank_environment.drift_seed ?? ''" @input="onSeedInput($event)" placeholder="e.g. 42" />
               <button class="seed-clear" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined" @click="inputs.tank_environment.drift_seed = null">✕</button>
               <span class="seed-status" v-if="inputs.tank_environment.drift_seed !== null && inputs.tank_environment.drift_seed !== undefined">locked</span>
               <span class="seed-status unlocked" v-else>random</span>
             </div>
+            <span class="field-error" v-if="tankErrors.drift_seed">{{ tankErrors.drift_seed }}</span>
           </div>
         </div>
 
@@ -620,9 +625,18 @@
         <tbody>
           <tr v-for="b in inputs.behavior_multipliers" :key="b.user_type">
             <td>{{ b.user_type }}</td><td>{{ userCount(b.user_type) }}</td>
-            <td><input type="number" min="0" step="0.1" v-model.number="b.shower_mult" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="b.sink_mult" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="b.toilet_mult" /></td>
+            <td :class="{ 'cell-invalid': behaviorErrors[behaviorFieldKey(b.user_type, 'shower_mult')] }">
+              <input type="number" min="0" step="0.1" v-model.number="b.shower_mult" />
+              <span class="field-error" v-if="behaviorErrors[behaviorFieldKey(b.user_type, 'shower_mult')]">{{ behaviorErrors[behaviorFieldKey(b.user_type, 'shower_mult')] }}</span>
+            </td>
+            <td :class="{ 'cell-invalid': behaviorErrors[behaviorFieldKey(b.user_type, 'sink_mult')] }">
+              <input type="number" min="0" step="0.1" v-model.number="b.sink_mult" />
+              <span class="field-error" v-if="behaviorErrors[behaviorFieldKey(b.user_type, 'sink_mult')]">{{ behaviorErrors[behaviorFieldKey(b.user_type, 'sink_mult')] }}</span>
+            </td>
+            <td :class="{ 'cell-invalid': behaviorErrors[behaviorFieldKey(b.user_type, 'toilet_mult')] }">
+              <input type="number" min="0" step="0.1" v-model.number="b.toilet_mult" />
+              <span class="field-error" v-if="behaviorErrors[behaviorFieldKey(b.user_type, 'toilet_mult')]">{{ behaviorErrors[behaviorFieldKey(b.user_type, 'toilet_mult')] }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -635,10 +649,22 @@
         <tbody>
           <tr v-for="a in inputs.activities" :key="a.id">
             <td>{{ a.name }}</td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="—" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" /></td>
-            <td><input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" /></td>
+            <td :class="{ 'cell-invalid': activityErrors[activityFieldKey(a.id, 'flow_gal_per_min')] }">
+              <input type="number" min="0" step="0.1" v-model.number="a.flow_gal_per_min" placeholder="—" />
+              <span class="field-error" v-if="activityErrors[activityFieldKey(a.id, 'flow_gal_per_min')]">{{ activityErrors[activityFieldKey(a.id, 'flow_gal_per_min')] }}</span>
+            </td>
+            <td :class="{ 'cell-invalid': activityErrors[activityFieldKey(a.id, 'duration_min')] }">
+              <input type="number" min="0" step="0.1" v-model.number="a.duration_min" placeholder="—" />
+              <span class="field-error" v-if="activityErrors[activityFieldKey(a.id, 'duration_min')]">{{ activityErrors[activityFieldKey(a.id, 'duration_min')] }}</span>
+            </td>
+            <td :class="{ 'cell-invalid': activityErrors[activityFieldKey(a.id, 'events_per_day_per_person')] }">
+              <input type="number" min="0" step="0.1" v-model.number="a.events_per_day_per_person" placeholder="—" />
+              <span class="field-error" v-if="activityErrors[activityFieldKey(a.id, 'events_per_day_per_person')]">{{ activityErrors[activityFieldKey(a.id, 'events_per_day_per_person')] }}</span>
+            </td>
+            <td :class="{ 'cell-invalid': activityErrors[activityFieldKey(a.id, 'gal_per_unit')] }">
+              <input type="number" min="0" step="0.1" v-model.number="a.gal_per_unit" placeholder="—" />
+              <span class="field-error" v-if="activityErrors[activityFieldKey(a.id, 'gal_per_unit')]">{{ activityErrors[activityFieldKey(a.id, 'gal_per_unit')] }}</span>
+            </td>
             <td>
               <select v-model.number="a.grey_pct">
                 <option :value="1">Yes</option>
@@ -990,6 +1016,20 @@ const isBlank = (v) =>
   v === '' || v == null || v === undefined || (typeof v === 'number' && Number.isNaN(v));
 
 const userTypeKey = (u) => `${u.name}::${u.is_child ? 1 : 0}`;
+const behaviorFieldKey = (userType, field) => `${userType}::${field}`;
+const activityFieldKey = (id, field) => `${id}::${field}`;
+
+const NON_NEGATIVE_MSG = 'Must be zero or greater';
+const LEVEL_NEGATIVE_MSG = 'Current level must be zero or greater';
+const isNegative = (v) => !isBlank(v) && Number.isFinite(Number(v)) && Number(v) < 0;
+
+/** Parse numeric tank input from raw field value; preserves '' and '-' while typing. */
+function parseTankInput(raw) {
+  const s = String(raw ?? '').trim();
+  if (s === '' || s === '-') return s;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : s;
+}
 
 function streamStyle(streamKey, lightMode) {
   const palette = STREAM_PALETTE[lightMode ? 'light' : 'dark'];
@@ -1020,7 +1060,7 @@ function buildHeatCellTitle(activity, day, streamKey, value, factor) {
 
 /** Validate inputs and return per-field error maps. Empty maps = valid. */
 function validateInputs(inputs) {
-  const errors = { tank: {}, people: {} };
+  const errors = { tank: {}, people: {}, behavior: {}, activity: {} };
   if (!inputs) return errors;
 
   // ── Tank validation ─────────────────────────────────────
@@ -1030,13 +1070,12 @@ function validateInputs(inputs) {
       const cap = coerceFloat(t[rule.capacityField], 0);
       if (cap <= 0) {
         errors.tank[rule.capacityErrorKey] = 'Tank capacity must be greater than 0';
-        continue; // skip level check if capacity is invalid
       }
       if (isBlank(t[rule.currentField])) {
         errors.tank[rule.levelErrorKey] = 'Current level is required';
-        continue;
-      }
-      if (coerceFloat(t[rule.currentField], 0) > cap) {
+      } else if (isNegative(t[rule.currentField])) {
+        errors.tank[rule.levelErrorKey] = LEVEL_NEGATIVE_MSG;
+      } else if (cap > 0 && coerceFloat(t[rule.currentField], 0) > cap) {
         errors.tank[rule.levelErrorKey] = `Exceeds capacity (${cap} gal)`;
       }
     }
@@ -1052,6 +1091,15 @@ function validateInputs(inputs) {
       if (!Number.isFinite(days) || !Number.isInteger(days) || days < 1) {
         errors.tank.target_autonomy = 'Target Autonomy Days must be a whole number ≥ 1';
       }
+    }
+    const alertPct = (t.alert_threshold ?? 0.1) * 100;
+    if (alertPct < 1) {
+      errors.tank.alert_threshold = 'Minimum alert threshold is 1%.';
+    } else if (alertPct > 99) {
+      errors.tank.alert_threshold = 'Alert threshold cannot exceed 99%.';
+    }
+    if (t.drift_seed != null && t.drift_seed !== '' && Number(t.drift_seed) < 0) {
+      errors.tank.drift_seed = NON_NEGATIVE_MSG;
     }
   }
 
@@ -1073,6 +1121,24 @@ function validateInputs(inputs) {
       const target = types.find(u => u.name === 'Adults Total') ?? types[0];
       if (target) {
         errors.people[userTypeKey(target)] = 'Add at least one person to compute a water plan';
+      }
+    }
+  }
+
+  // ── Behavior multiplier validation ──────────────────────
+  for (const b of inputs.behavior_multipliers ?? []) {
+    for (const field of ['shower_mult', 'sink_mult', 'toilet_mult']) {
+      if (isNegative(b[field])) {
+        errors.behavior[behaviorFieldKey(b.user_type, field)] = NON_NEGATIVE_MSG;
+      }
+    }
+  }
+
+  // ── Activity engine validation ──────────────────────────
+  for (const a of inputs.activities ?? []) {
+    for (const field of ['flow_gal_per_min', 'duration_min', 'events_per_day_per_person', 'gal_per_unit']) {
+      if (isNegative(a[field])) {
+        errors.activity[activityFieldKey(a.id, field)] = NON_NEGATIVE_MSG;
       }
     }
   }
@@ -1105,7 +1171,6 @@ createApp({
       saving: false,
       saveMsg: '',
       saveError: false,
-      alertThresholdMsg: '',
       heatStream: 'fresh',
       realtime: null,
       realtimeDay: 1,
@@ -1127,11 +1192,39 @@ createApp({
     totalBlack() { return this.results?.activity_results?.reduce((s, r) => s + (r.black_added_gal || 0), 0) ?? 0; },
 
     // ── Validation (single source of truth) ──────────────
-    validation() { return validateInputs(this.inputs); },
-    tankErrors()   { return this.validation.tank; },
-    peopleErrors() { return this.validation.people; },
+    validation() {
+      const t = this.inputs?.tank_environment;
+      if (t) {
+        for (const rule of TANK_RULES) {
+          void t[rule.capacityField];
+          void t[rule.currentField];
+        }
+        void t.climate_multiplier;
+        void t.target_autonomy_days;
+        void t.alert_threshold;
+        void t.drift_seed;
+      }
+      const b = this.inputs?.behavior_multipliers;
+      if (b) for (const row of b) { void row.shower_mult; void row.sink_mult; void row.toilet_mult; }
+      const a = this.inputs?.activities;
+      if (a) for (const row of a) {
+        void row.flow_gal_per_min; void row.duration_min;
+        void row.events_per_day_per_person; void row.gal_per_unit;
+      }
+      const u = this.inputs?.user_types;
+      if (u) for (const row of u) void row.count;
+      return validateInputs(this.inputs);
+    },
+    tankErrors()     { return this.validation.tank; },
+    peopleErrors()   { return this.validation.people; },
+    behaviorErrors() { return this.validation.behavior; },
+    activityErrors() { return this.validation.activity; },
     hasInputErrors() {
-      return Object.keys(this.tankErrors).length > 0 || Object.keys(this.peopleErrors).length > 0;
+      const v = this.validation;
+      return Object.keys(v.tank).length > 0
+        || Object.keys(v.people).length > 0
+        || Object.keys(v.behavior).length > 0
+        || Object.keys(v.activity).length > 0;
     },
 
     // ── Drift display ────────────────────────────────────
@@ -1272,6 +1365,8 @@ createApp({
 
     userCount(ut) { return this.inputs?.user_types?.find(x => x.name === ut)?.count ?? 0; },
     userTypeKey, // re-export helper to template
+    behaviorFieldKey,
+    activityFieldKey,
 
     // Coerce any "" values back to numbers before sending to the API
     normalizeInputsBeforeSave() {
@@ -1360,16 +1455,15 @@ createApp({
       const v = e.target.value.trim();
       this.inputs.tank_environment.drift_seed = v === '' ? null : parseInt(v, 10);
     },
+    onTankEnvInput(e, field) {
+      this.inputs.tank_environment[field] = parseTankInput(e.target.value);
+    },
     onAlertThresholdInput(e) {
-      const v = parseFloat(e.target.value);
+      const raw = e.target.value.trim();
+      if (raw === '') return;
+      const v = parseFloat(raw);
       if (Number.isNaN(v)) return;
-      if (v < 1) {
-        this.alertThresholdMsg = 'Minimum alert threshold is 1%.';
-        this.inputs.tank_environment.alert_threshold = 0.01;
-        return;
-      }
-      this.alertThresholdMsg = '';
-      this.inputs.tank_environment.alert_threshold = Math.max(0.01, Math.min(0.99, v / 100));
+      this.inputs.tank_environment.alert_threshold = v / 100;
     },
 
     // ── Tank-status helpers (Plan card chrome) ───────────
