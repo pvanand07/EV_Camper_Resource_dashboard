@@ -550,7 +550,11 @@
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
           <span class="field-error" v-if="tankErrors.black">{{ tankErrors.black }}</span>
         </div>
-        <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
+        <div class="form-row" :class="{ invalid: tankErrors.climate_multiplier }">
+          <label>Climate Multiplier (×)</label>
+          <input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" />
+          <span class="field-error" v-if="tankErrors.climate_multiplier">{{ tankErrors.climate_multiplier }}</span>
+        </div>
         <div class="form-row" :class="{ invalid: tankErrors.target_autonomy }">
           <label>Target Autonomy Days</label>
           <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
@@ -982,6 +986,8 @@ const coerceOptFloat = (v) => {
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : null;
 };
+const isBlank = (v) =>
+  v === '' || v == null || v === undefined || (typeof v === 'number' && Number.isNaN(v));
 
 const userTypeKey = (u) => `${u.name}::${u.is_child ? 1 : 0}`;
 
@@ -1026,12 +1032,26 @@ function validateInputs(inputs) {
         errors.tank[rule.capacityErrorKey] = 'Tank capacity must be greater than 0';
         continue; // skip level check if capacity is invalid
       }
+      if (isBlank(t[rule.currentField])) {
+        errors.tank[rule.levelErrorKey] = 'Current level is required';
+        continue;
+      }
       if (coerceFloat(t[rule.currentField], 0) > cap) {
         errors.tank[rule.levelErrorKey] = `Exceeds capacity (${cap} gal)`;
       }
     }
-    if (coerceFloat(t.target_autonomy_days, 5) < 1) {
-      errors.tank.target_autonomy = 'Target Autonomy Days must be greater than 0';
+    if (isBlank(t.climate_multiplier)) {
+      errors.tank.climate_multiplier = 'Climate multiplier is required';
+    } else if (coerceFloat(t.climate_multiplier, 0) <= 0) {
+      errors.tank.climate_multiplier = 'Climate multiplier must be greater than 0';
+    }
+    if (isBlank(t.target_autonomy_days)) {
+      errors.tank.target_autonomy = 'Target Autonomy Days is required';
+    } else {
+      const days = Number(t.target_autonomy_days);
+      if (!Number.isFinite(days) || !Number.isInteger(days) || days < 1) {
+        errors.tank.target_autonomy = 'Target Autonomy Days must be a whole number ≥ 1';
+      }
     }
   }
 

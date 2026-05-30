@@ -1,20 +1,6 @@
 """
 FastAPI backend for Water Intelligence Engine v2.
 Exposes editable inputs and computed results.
-
-Changes from original:
-- lifespan calls init_db() (migrate + seed) instead of reset_database().
-  User data now survives server restarts.
-- Shared WAL-mode connection managed via _db_conn / _db_lock so all
-  requests use one connection and concurrent writes are serialised.
-- get_conn() context manager acquires the lock and yields the shared conn.
-- PUT /api/inputs triggers compute_and_store() after saving — GETs no longer do.
-- GET /api/results and GET /api/realtime are now pure reads.
-- TankEnvironmentUpdate gains Pydantic validators: tank capacity > 0,
-  non-negative current levels, current ≤ capacity, drift ∈ [0, 1],
-  climate_multiplier > 0.
-- Heatmap pivot key renamed "back" → "black" (was a typo) in both
-  get_results() and get_realtime(), and in _heatmap_ranges().
 """
 
 import math
@@ -116,18 +102,26 @@ class UserTypeUpdate(BaseModel):
     count: int
     is_child: int = 0
 
-    @field_validator("count", "is_child", mode="before")
+    @field_validator("count", mode="before")
+    @classmethod
+    def count_must_be_whole_number(cls, v):
+        if v == "" or v is None:
+            return 0
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            raise ValueError("People counts must be whole numbers")
+        if not f.is_integer():
+            raise ValueError("People counts must be whole numbers")
+        if f < 0:
+            raise ValueError("People counts must be zero or positive integers.")
+        return int(f)
+
+    @field_validator("is_child", mode="before")
     @classmethod
     def empty_str_int_to_zero(cls, v):
         if v == "" or v is None:
             return 0
-        return v
-
-    @field_validator("count")
-    @classmethod
-    def count_must_be_non_negative(cls, v):
-        if v < 0:
-            raise ValueError("People counts must be zero or positive integers.")
         return v
 
 
@@ -139,7 +133,7 @@ class TankEnvironmentUpdate(BaseModel):
     current_grey_gal:     float = 0
     current_black_gal:    float = 0
     climate_multiplier:   float = 1.0
-    target_autonomy_days: float = 5
+    target_autonomy_days: int = 5
     drift:                float = 0.0
     drift_seed:           int | None = None
     alert_threshold:      float = 0.10
@@ -153,6 +147,17 @@ class TankEnvironmentUpdate(BaseModel):
     def capacity_must_be_positive(cls, v):
         if v is not None and float(v) <= 0:
             raise ValueError("Tank capacity must be greater than 0")
+        return v
+
+    @field_validator(
+        "current_fresh_gal", "current_grey_gal", "current_black_gal",
+        "climate_multiplier",
+        mode="before",
+    )
+    @classmethod
+    def required_numeric(cls, v):
+        if v == "" or v is None:
+            raise ValueError("This field is required")
         return v
 
     @field_validator(
@@ -178,10 +183,18 @@ class TankEnvironmentUpdate(BaseModel):
 
     @field_validator("target_autonomy_days", mode="before")
     @classmethod
-    def target_autonomy_min_one(cls, v):
-        if v is not None and float(v) < 1:
+    def target_autonomy_must_be_integer(cls, v):
+        if v == "" or v is None:
+            raise ValueError("Target Autonomy Days is required")
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            raise ValueError("Target Autonomy Days must be a whole number")
+        if f < 1:
             raise ValueError("Target Autonomy Days must be at least 1")
-        return v
+        if not f.is_integer():
+            raise ValueError("Target Autonomy Days must be a whole number")
+        return int(f)
 
     @field_validator("climate_multiplier", mode="before")
     @classmethod

@@ -507,9 +507,10 @@
     <div class="section section-people" v-if="inputs">
       <h2>Section 1 — People <span class="badge">Adults = Expert + Typical + Glamper (auto)</span></h2>
       <div class="form-grid">
-        <div class="form-row" v-for="u in inputs.user_types" :key="u.name+u.is_child">
+        <div class="form-row" :class="{ invalid: peopleErrors[userTypeKey(u)] }" v-for="u in inputs.user_types" :key="u.name+u.is_child">
           <label>{{ u.name }}<span v-if="u.is_child"> (children)</span></label>
           <input type="number" min="0" step="1" v-model.number="u.count" :readonly="u.name==='Adults Total'" />
+          <span class="field-error" v-if="peopleErrors[userTypeKey(u)]">{{ peopleErrors[userTypeKey(u)] }}</span>
         </div>
       </div>
       <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Adults Total = {{ adultsTotal }} (auto-sum)</p>
@@ -548,7 +549,11 @@
           <input type="number" min="0" step="0.1" v-model.number="inputs.tank_environment.current_black_gal" />
           <span class="field-error" v-if="tankLevelErrors.black">{{ tankLevelErrors.black }}</span>
         </div>
-        <div class="form-row"><label>Climate Multiplier (×)</label><input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" /></div>
+        <div class="form-row" :class="{ invalid: tankLevelErrors.climate_multiplier }">
+          <label>Climate Multiplier (×)</label>
+          <input type="number" min="0.1" step="0.1" v-model.number="inputs.tank_environment.climate_multiplier" />
+          <span class="field-error" v-if="tankLevelErrors.climate_multiplier">{{ tankLevelErrors.climate_multiplier }}</span>
+        </div>
         <div class="form-row" :class="{ invalid: tankLevelErrors.target_autonomy }">
           <label>Target Autonomy Days</label>
           <input type="number" min="1" step="1" v-model.number="inputs.tank_environment.target_autonomy_days" />
@@ -651,7 +656,7 @@
     </div>
 
     <div class="save-bar">
-      <button class="btn btn-primary" @click="saveInputs" :disabled="saving || hasTankLevelErrors">Save & Compute</button>
+      <button class="btn btn-primary" @click="saveInputs" :disabled="saving || hasInputErrors">Save & Compute</button>
       <span class="msg" :class="{ err: saveBarIsError }" v-if="saveBarMessage">{{ saveBarMessage }}</span>
     </div>
   </div>
@@ -976,6 +981,9 @@ function coerceOptFloat(v) {
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : null;
 }
+const isBlank = (v) =>
+  v === '' || v == null || v === undefined || (typeof v === 'number' && Number.isNaN(v));
+const userTypeKey = (u) => `${u.name}::${u.is_child ? 1 : 0}`;
 
 const TANK_CAPACITY_CHECKS = [
   { key: 'fresh_capacity', field: 'Fresh Tank Capacity', capacity: 'fresh_capacity_gal' },
@@ -991,46 +999,74 @@ const TANK_LEVEL_CHECKS = [
 
 const CAPACITY_ERROR = 'Tank capacity must be greater than 0';
 
-function buildTankLevelErrors(t) {
-  if (!t) return {};
-  const errors = {};
-  for (const { key, capacity } of TANK_CAPACITY_CHECKS) {
-    if (coerceFloat(t[capacity], 0) <= 0) {
-      errors[key] = CAPACITY_ERROR;
+/** Validate inputs and return per-field error maps. Empty maps = valid. */
+function validateInputs(inputs) {
+  const errors = { tank: {}, people: {} };
+  if (!inputs) return errors;
+
+  const t = inputs.tank_environment;
+  if (t) {
+    for (const { key, capacity } of TANK_CAPACITY_CHECKS) {
+      if (coerceFloat(t[capacity], 0) <= 0) {
+        errors.tank[key] = CAPACITY_ERROR;
+      }
+    }
+    for (const { key, current, capacity } of TANK_LEVEL_CHECKS) {
+      const cap = coerceFloat(t[capacity], 0);
+      if (cap <= 0) continue;
+      if (isBlank(t[current])) {
+        errors.tank[key] = 'Current level is required';
+        continue;
+      }
+      if (coerceFloat(t[current], 0) > cap) {
+        errors.tank[key] = `Exceeds capacity (${cap} gal)`;
+      }
+    }
+    if (isBlank(t.climate_multiplier)) {
+      errors.tank.climate_multiplier = 'Climate multiplier is required';
+    } else if (coerceFloat(t.climate_multiplier, 0) <= 0) {
+      errors.tank.climate_multiplier = 'Climate multiplier must be greater than 0';
+    }
+    if (isBlank(t.target_autonomy_days)) {
+      errors.tank.target_autonomy = 'Target Autonomy Days is required';
+    } else {
+      const days = Number(t.target_autonomy_days);
+      if (!Number.isFinite(days) || !Number.isInteger(days) || days < 1) {
+        errors.tank.target_autonomy = 'Target Autonomy Days must be a whole number ≥ 1';
+      }
     }
   }
-  for (const { key, current, capacity } of TANK_LEVEL_CHECKS) {
-    const cap = coerceFloat(t[capacity], 0);
-    if (cap <= 0) continue;
-    if (coerceFloat(t[current], 0) > cap) {
-      errors[key] = `Exceeds capacity (${cap} gal)`;
+
+  const types = inputs.user_types ?? [];
+  let hasIndividualError = false;
+  for (const u of types) {
+    const v = Number(u.count);
+    if (!Number.isFinite(v) || !Number.isInteger(v) || v < 0) {
+      errors.people[userTypeKey(u)] = 'People count must be a non-negative integer';
+      hasIndividualError = true;
     }
   }
-  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
-    errors.target_autonomy = 'Target Autonomy Days must be greater than 0';
+  if (!hasIndividualError) {
+    const total = types.reduce((s, u) => s + (Number(u.count) || 0), 0);
+    if (total < 1) {
+      const target = types.find(u => u.name === 'Adults Total') ?? types[0];
+      if (target) {
+        errors.people[userTypeKey(target)] = 'Add at least one person to compute a water plan';
+      }
+    }
   }
+
   return errors;
 }
 
-function tankLevelErrorSummary(t) {
-  if (!t) return '';
-  const capacityFields = TANK_CAPACITY_CHECKS
-    .filter(({ capacity }) => coerceFloat(t[capacity], 0) <= 0)
-    .map(({ field }) => field);
-  if (capacityFields.length) {
-    return `Please fix input for ${capacityFields.join(', ')}.`;
-  }
-  if (coerceFloat(t.target_autonomy_days, 5) < 1) {
-    return 'Target Autonomy Days must be greater than 0';
-  }
-  const fields = TANK_LEVEL_CHECKS
-    .filter(({ current, capacity }) => {
-      const cap = coerceFloat(t[capacity], 0);
-      return cap > 0 && coerceFloat(t[current], 0) > cap;
-    })
-    .map(({ field, capacity }) => `${field} (${coerceFloat(t[capacity], 0)} gal)`);
-  if (!fields.length) return '';
-  return `Please fix input for ${fields.join(', ')}.`;
+function buildTankLevelErrors(t) {
+  return validateInputs({ tank_environment: t, user_types: [] }).tank;
+}
+
+function inputErrorSummary(inputs) {
+  const { tank, people } = validateInputs(inputs);
+  const msgs = [...Object.values(tank), ...Object.values(people)];
+  return msgs.length ? msgs[0] : '';
 }
 
 function parseSaveError(text, status) {
@@ -1082,15 +1118,20 @@ createApp({
     driftSd()  { return ((this.inputs?.tank_environment?.drift??0)/2).toFixed(2); },
     driftLo()  { return (1-(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
     driftHi()  { return (1+(this.inputs?.tank_environment?.drift??0)).toFixed(2); },
-    tankLevelErrors() { return buildTankLevelErrors(this.inputs?.tank_environment); },
-    hasTankLevelErrors() { return Object.keys(this.tankLevelErrors).length > 0; },
+    validation() { return validateInputs(this.inputs); },
+    tankLevelErrors() { return this.validation.tank; },
+    peopleErrors() { return this.validation.people; },
+    hasInputErrors() {
+      return Object.keys(this.tankLevelErrors).length > 0 || Object.keys(this.peopleErrors).length > 0;
+    },
+    hasTankLevelErrors() { return this.hasInputErrors; },
     saveBarMessage() {
-      const summary = tankLevelErrorSummary(this.inputs?.tank_environment);
+      const summary = inputErrorSummary(this.inputs);
       if (summary) return summary;
       return this.saveMsg;
     },
     saveBarIsError() {
-      return this.hasTankLevelErrors || this.saveError;
+      return this.hasInputErrors || this.saveError;
     },
     heatDayNums() { return Array.from({length: this.results?.target_days||0},(_,i)=>i+1); },
     streamKey()   { return this.heatStream==='black'?'back':this.heatStream; },
@@ -1236,6 +1277,7 @@ createApp({
       catch(e) { this.saveMsg='Load failed: '+e.message; this.saveError=true; }
     },
     userCount(ut) { return this.inputs?.user_types?.find(x=>x.name===ut)?.count??0; },
+    userTypeKey,
     normalizeInputsBeforeSave() {
       if (!this.inputs) return;
       for (const u of this.inputs.user_types) {
@@ -1271,10 +1313,10 @@ createApp({
       }
     },
     async saveInputs(successMsg = 'Saved. Plan updated.') {
+      if (this.hasInputErrors) return;
       this.saving=true; this.saveMsg=''; this.saveError=false;
       try {
         this.normalizeInputsBeforeSave();
-        if (tankLevelErrorSummary(this.inputs.tank_environment)) return;
         const r = await fetch(API+'/inputs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_types:this.inputs.user_types,tank_environment:this.inputs.tank_environment,behavior_multipliers:this.inputs.behavior_multipliers,activities:this.inputs.activities})});
         if (!r.ok) {
           const text = await r.text();
@@ -1286,7 +1328,7 @@ createApp({
       finally { this.saving=false; }
     },
     async refreshPlan() {
-      if (this.hasTankLevelErrors) {
+      if (this.hasInputErrors) {
         this.saveMsg = 'Fix input errors before refreshing the plan.';
         this.saveError = true;
         return;
@@ -1388,7 +1430,7 @@ createApp({
     },
     async loadRealtime(recompute = false) {
       if (recompute) {
-        if (this.hasTankLevelErrors) {
+        if (this.hasInputErrors) {
           this.saveMsg = 'Fix input errors before refreshing realtime.';
           this.saveError = true;
           return;
